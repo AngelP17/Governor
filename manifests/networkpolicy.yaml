@@ -1,0 +1,49 @@
+# This NetworkPolicy scopes traffic for resilience-pilot pods without breaking
+# the local demo flow.
+#
+# Ingress rules allow:
+#   - Traffic from workloads in the same namespace on port 8080
+#   - Prometheus scraping from the monitoring namespace on port 8080
+#
+# Egress rules allow:
+#   - DNS resolution (port 53 UDP/TCP)
+#
+# Note:
+#   In k3d, host-to-service traffic is proxied through the cluster load balancer
+#   and is not selected by pod-level namespace selectors. This policy therefore
+#   stays conservative and avoids controller-specific label assumptions.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: resilience-pilot-netpol
+  namespace: default
+  labels:
+    app: resilience-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: resilience-pilot
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
+      ports:
+        - port: 8080
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

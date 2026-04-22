@@ -35,3 +35,15 @@ alerts:
     snapshot_script: scripts/capture_incident_snapshot.sh
     description: "No available replicas for the deployment"
     remediation_script: scripts/remediate_pod_crash.sh
+  HighErrorRateFastBurn:
+    severity: critical
+    runbook: runbooks/deployment-rollback.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    remediation_script: scripts/remediate_deployment_rollback.sh
+    description: "Error rate exceeds 10% over 2 minutes (fast budget burn)"
+  HighErrorRateSlowBurn:
+    severity: warning
+    runbook: runbooks/deployment-rollback.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    remediation_script: scripts/remediate_deployment_rollback.sh
+    description: "Error rate exceeds 2% over 30 minutes (slow budget burn)"

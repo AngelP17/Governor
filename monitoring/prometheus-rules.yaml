@@ -144,3 +144,47 @@ spec:
               Deployment resilience-pilot has no available replicas.
               Immediate action required!
             runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/pod-crash.md"
+
+    # ========================================================================
+    # Error Budget Burn Rate Alerts
+    # Detects fast and slow error budget consumption
+    # ========================================================================
+    - name: resilience-pilot.error-budget
+      rules:
+        - alert: HighErrorRateFastBurn
+          expr: |
+            (
+              sum(rate(http_requests_total{status=~"5.."}[2m]))
+              /
+              sum(rate(http_requests_total[2m]))
+            ) > 0.10
+          for: 1m
+          labels:
+            severity: critical
+            team: sre
+          annotations:
+            summary: "Fast error budget burn detected"
+            description: |
+              Error rate is {{ $value | humanizePercentage }} over the last 2 minutes,
+              exceeding 10% threshold. This indicates a rapid error budget burn
+              requiring immediate attention.
+            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/deployment-rollback.md"
+
+        - alert: HighErrorRateSlowBurn
+          expr: |
+            (
+              sum(rate(http_requests_total{status=~"5.."}[30m]))
+              /
+              sum(rate(http_requests_total[30m]))
+            ) > 0.02
+          for: 10m
+          labels:
+            severity: warning
+            team: sre
+          annotations:
+            summary: "Sustained elevated error rate (slow burn)"
+            description: |
+              Error rate is {{ $value | humanizePercentage }} over the last 30 minutes,
+              exceeding 2% threshold. This indicates a slow, sustained error budget burn
+              that may indicate a gradual degradation.
+            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/deployment-rollback.md"

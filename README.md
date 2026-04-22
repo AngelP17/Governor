@@ -36,7 +36,7 @@ graph TB
             subgraph Mon["Namespace: monitoring"]
                 PROM["Prometheus Server"]
                 GRAF["Grafana Dashboard"]
-                ALERTS["Alert Rules<br/>6 SLO-based alerts"]
+                ALERTS["Alert Rules<br/>8 SLO-based alerts"]
             end
             subgraph GitNS["Namespace: argocd"]
                 ARGO["ArgoCD Controller"]
@@ -95,7 +95,7 @@ flowchart LR
 
 | Phase | Tool | Artifact |
 |-------|------|----------|
-| **Detect** | Prometheus alerts (6 rules) | Alert with runbook annotation |
+| **Detect** | Prometheus alerts (8 rules) | Alert with runbook annotation |
 | **Snapshot** | `scripts/capture_incident_snapshot.sh` | `snapshot-pre/` with pods, events, logs |
 | **Runbook** | `runbooks/*.md` via `alert-runbook-map.yaml` | Structured remediation steps |
 | **Recover** | Kubernetes self-healing (probes, Deployment controller) | Pod replacement in ~8s |
@@ -114,6 +114,21 @@ See [Operational Feedback Loop](docs/operational-feedback-loop.md) for the full 
 | **MTTR** | < 30 seconds | Mean Time To Recovery after pod failure |
 | **Error Rate** | < 0.5% | HTTP 5xx responses |
 | **Latency P95** | < 500ms | 95th percentile response time |
+
+---
+
+## Production Controls
+
+| Control | Artifact | Purpose |
+|---------|----------|---------|
+| NetworkPolicy | `manifests/networkpolicy.yaml` | Restricts ingress/egress to service traffic, Prometheus scraping, and DNS |
+| PodDisruptionBudget | `manifests/poddisruptionbudget.yaml` | Maintains 2 of 3 replicas during voluntary disruptions |
+| HorizontalPodAutoscaler | `manifests/hpa.yaml` | Scales 3-6 replicas on CPU (requires metrics-server) |
+| Policy-as-Code | `policy/kubernetes.rego` | Enforces non-root, capability drops, probes, resource limits via OPA |
+| kubeconform | `make validate-k8s` | Validates Kubernetes manifest schemas before merge |
+| Burn-Rate Alerting | `monitoring/prometheus-rules.yaml` | Fast-burn and slow-burn error budget alerts in addition to threshold alerts |
+
+Alerting includes both threshold-based rules and burn-rate-style rules so the repo demonstrates SRE error-budget thinking, not only basic symptom thresholds.
 
 ---
 
@@ -260,7 +275,13 @@ k8s-resilience-pilot/
 ├── manifests/                  # Kubernetes Resources
 │   ├── deployment.yaml         # 3 replicas, probes, anti-affinity
 │   ├── service.yaml            # ClusterIP with Prometheus annotations
-│   └── ingress.yaml            # Path-based routing
+│   ├── ingress.yaml            # Path-based routing
+│   ├── networkpolicy.yaml      # Ingress/egress traffic controls
+│   ├── poddisruptionbudget.yaml # Min 2 replicas during disruptions
+│   └── hpa.yaml                # CPU autoscaling (3-6 replicas)
+├── policy/                     # Policy-as-Code
+│   ├── kubernetes.rego         # OPA/Rego validation rules
+│   └── README.md               # Policy enforcement docs
 ├── monitoring/                 # Observability
 │   ├── grafana-dashboard.json  # Pre-built dashboard
 │   ├── prometheus-rules.yaml   # Alerting rules
@@ -319,6 +340,9 @@ k8s-resilience-pilot/
 - ✅ **Chaos Engineering** - Controlled failure injection
 - ✅ **MTTR Measurement** - Quantified recovery times
 - ✅ **Remediation Scripts** - Dry-run validated, audited remediation with decision records
+- ✅ **Burn-Rate Alerting** - Fast-burn and slow-burn error budget alerts beyond static thresholds
+- ✅ **Policy-as-Code** - OPA/Rego rules enforced in CI via conftest
+- ✅ **Production Controls** - NetworkPolicy, PDB, HPA manifests
 
 ### Application Development
 - ✅ **Python/FastAPI** - Modern async API framework
@@ -386,11 +410,22 @@ See [Remediation Contract](docs/remediation-contract.md) for the full safety mod
 | `make validate-python` | Compile-check Python scripts |
 | `make validate-yaml` | Parse all YAML files |
 | `make validate-json` | Parse all JSON artifacts |
+| `make validate-k8s` | Validate Kubernetes manifests with kubeconform |
+| `make validate-policy` | Validate manifests against OPA policies with conftest |
 | `make validate-summary` | Test summary script on sample data |
+| `make doctor` | Check all prerequisites are installed |
 | `make chaos` | Run chaos monkey |
 | `make webhook-demo` | Start webhook receiver on :9095 |
 | `make summary` | Generate experiment summary |
 | `make clean` | Remove generated incident artifacts |
+
+## Known Boundaries
+
+- Production-style, not production-hosted — runs locally on k3d with zero-cost tooling
+- HPA manifest included but requires metrics-server for active scaling
+- AWS/EKS migration path documented at [docs/aws-deployment-plan.md](docs/aws-deployment-plan.md) but not provisioned
+- Webhook receiver is local-only with no TLS or authentication
+- No scheduling, ticketing, or on-call integrations
 
 ## Cleanup
 
@@ -418,6 +453,10 @@ This will:
 - [High Latency Runbook](runbooks/high-latency.md)
 - [DNS Failure Runbook](runbooks/dns-failure.md)
 - [Deployment Rollback Runbook](runbooks/deployment-rollback.md)
+- [Post-Incident Review Template](docs/postmortem-template.md)
+- [Final Validation Report](docs/final-validation-report.md)
+- [Sample Artifacts Guide](docs/sample-artifacts/README.md)
+- [Policy-as-Code](policy/README.md)
 
 ---
 
@@ -435,4 +474,3 @@ This will:
 MIT License - feel free to use this for your own portfolio!
 
 ---
-

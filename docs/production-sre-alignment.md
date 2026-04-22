@@ -23,7 +23,7 @@ All configurations are declarative, version-controlled, and reproducible.
 | Non-root container security | Implemented | `runAsNonRoot: true`, `runAsUser: 1000` |
 | Read-only root filesystem | Implemented | `readOnlyRootFilesystem: true` with tmpfs writes |
 | Capability dropping (ALL) | Implemented | `drop: ["ALL"]` in security context |
-| SLO-based alerting (6 rules) | Implemented | Prometheus alert rules for restart rate, availability, latency, etc. |
+| SLO-based alerting (8 rules) | Implemented | Prometheus alert rules for restart rate, availability, latency, threshold breaches, and burn-rate-style degradation |
 | Runbook coverage (4 runbooks) | Implemented | Pod crash, high restart rate, crashloop, SLO breach runbooks |
 | Remediation scripts with dry-run | Implemented | All remediation scripts support `DRY_RUN=true` |
 | Incident artifact audit trail | Implemented | `result.json`, `report.md`, snapshots per incident |
@@ -34,7 +34,7 @@ All configurations are declarative, version-controlled, and reproducible.
 | SRE Role | Lab Implementation |
 |----------|-------------------|
 | Incident Response | Closed-loop workflow: inject failure, detect, capture artifacts, remediate, review |
-| Observability | Prometheus metrics collection, Grafana dashboards, 6 alert rules |
+| Observability | Prometheus metrics collection, Grafana dashboards, 8 alert rules |
 | Chaos Engineering | `chaos_monkey.sh` with pod termination, MTTR tracking, SLO validation |
 | Runbook Operations | 4 runbooks covering common failure modes, alert-runbook mapping |
 | Remediation Automation | Scripts with dry-run mode, decision records, operator-invoked execution |

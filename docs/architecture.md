@@ -137,13 +137,15 @@ flowchart LR
         AM["AlertManager"]
     end
 
-    subgraph Rules["PrometheusRule CRD<br/>6 alert rules"]
+    subgraph Rules["PrometheusRule CRD<br/>8 alert rules"]
         R1["HighPodRestartRate"]
         R2["PodCrashLoopBackOff"]
         R3["HighErrorRate"]
         R4["HighLatencyP95"]
         R5["InsufficientReplicas"]
         R6["ServiceDown"]
+        R7["HighErrorRateFastBurn"]
+        R8["HighErrorRateSlowBurn"]
     end
 
     subgraph Dash["Grafana Dashboard"]
@@ -273,7 +275,7 @@ flowchart TB
 
 ## Alert-to-Runbook Mapping
 
-Six Prometheus alerts mapped to four runbooks via `monitoring/alert-runbook-map.yaml`.
+Eight Prometheus alerts mapped to four runbooks via `monitoring/alert-runbook-map.yaml`.
 
 ```mermaid
 flowchart LR
@@ -482,6 +484,47 @@ flowchart LR
 
 ---
 
+## Production Controls
+
+Kubernetes production controls enforcing reliability and security guardrails.
+
+```mermaid
+flowchart TB
+    subgraph Controls["Production Controls"]
+        NP["NetworkPolicy<br/>Ingress: app traffic + Prometheus<br/>Egress: DNS only"]
+        PDB["PodDisruptionBudget<br/>minAvailable: 2 of 3 replicas"]
+        HPA["HorizontalPodAutoscaler<br/>CPU 70% threshold<br/>3-6 replicas"]
+        REGO["Policy-as-Code<br/>7 OPA/Rego rules<br/>Enforced in CI"]
+    end
+
+    subgraph Alerts["Burn-Rate Alerting"]
+        FB["Fast Burn<br/>10% errors over 2m<br/>severity: critical"]
+        SB["Slow Burn<br/>2% errors over 30m<br/>severity: warning"]
+    end
+
+    REGO --> NP
+    REGO --> PDB
+    REGO --> HPA
+    FB --> SB
+
+    style NP fill:#e1f5fe,stroke:#0288d1
+    style PDB fill:#e8f5e9,stroke:#388e3c
+    style HPA fill:#fff3e0,stroke:#f57c00
+    style REGO fill:#ede7f6,stroke:#5e35b1
+    style FB fill:#ffcdd2,stroke:#c62828
+    style SB fill:#fff9c4,stroke:#f9a825
+```
+
+| Control | File | Enforced By |
+|---------|------|-------------|
+| NetworkPolicy | `manifests/networkpolicy.yaml` | Kubernetes NetworkPolicy plugin |
+| PodDisruptionBudget | `manifests/poddisruptionbudget.yaml` | Kubernetes Eviction API |
+| HorizontalPodAutoscaler | `manifests/hpa.yaml` | Kubernetes HPA controller + metrics-server |
+| Policy-as-Code | `policy/kubernetes.rego` | conftest in CI |
+| Burn-Rate Alerts | `monitoring/prometheus-rules.yaml` | Prometheus alerting |
+
+---
+
 ## Related
 
 - [Remediation Contract](remediation-contract.md)
@@ -494,3 +537,7 @@ flowchart LR
 - [High Latency Runbook](../runbooks/high-latency.md)
 - [DNS Failure Runbook](../runbooks/dns-failure.md)
 - [Deployment Rollback Runbook](../runbooks/deployment-rollback.md)
+- [Post-Incident Review Template](postmortem-template.md)
+- [Final Validation Report](final-validation-report.md)
+- [Policy-as-Code](../policy/README.md)
+- [Sample Artifacts](sample-artifacts/README.md)

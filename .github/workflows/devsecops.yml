@@ -286,3 +286,23 @@ jobs:
         run: |
           python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('docs/sample-artifacts/*.json')]"
           python3 -c "import json; json.load(open('monitoring/grafana-dashboard.json'))"
+
+      - name: Install kubeconform
+        run: |
+          KUBECONFORM_VERSION="v0.6.7"
+          curl -sL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz
+          chmod +x kubeconform
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate Kubernetes manifests
+        run: kubeconform -strict -summary manifests/*.yaml
+
+      - name: Install conftest
+        run: |
+          CONFTEST_VERSION="0.56.0"
+          curl -sL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xz
+          chmod +x conftest
+          sudo mv conftest /usr/local/bin/
+
+      - name: Validate policies
+        run: conftest test manifests/*.yaml --policy policy/

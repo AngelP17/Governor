@@ -1,0 +1,33 @@
+# This HorizontalPodAutoscaler scales the resilience-pilot deployment based on
+# CPU utilization with a 70% threshold. It maintains between 3 and 6 replicas.
+#
+# Requirements:
+#   - metrics-server must be installed in the cluster for active scaling.
+#     Install with:
+#       kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+#   - Verify installation and HPA status with:
+#       kubectl get hpa
+#       kubectl top pods
+#
+# Included as a production-readiness control for demonstration purposes.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: resilience-pilot-hpa
+  namespace: default
+  labels:
+    app: resilience-pilot
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: resilience-pilot
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
