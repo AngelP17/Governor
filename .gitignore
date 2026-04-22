@@ -1,0 +1,16 @@
+# Generated incident artifacts (preserve .gitkeep)
+incidents/INC-*
+!incidents/.gitkeep
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfstate*

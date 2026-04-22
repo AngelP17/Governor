@@ -1,8 +1,8 @@
-# The Resilience Pilot 🛫
+# Kubernetes Reliability Platform
 
 [![DevSecOps Pipeline](https://github.com/AngelP17/k8s-resilience-pilot/actions/workflows/devsecops.yml/badge.svg)](https://github.com/AngelP17/k8s-resilience-pilot/actions/workflows/devsecops.yml)
 
-**A production-grade SRE lab demonstrating self-healing Kubernetes, shift-left security, and full observability.**
+**Production-style Kubernetes reliability platform for failure injection, observability, incident context capture, and runbook-driven recovery.**
 
 Built for technical interviews and portfolio demonstrations. 100% local execution using k3d, Docker Desktop, and free tools only.
 
@@ -51,6 +51,31 @@ graph TB
     style Pod2 fill:#fce4ec
     style Pod3 fill:#fce4ec
 ```
+
+---
+
+## Operational Incident Workflow
+
+Every chaos experiment follows a closed-loop audit trail:
+
+`detect → snapshot → runbook → recover → validate → audit`
+
+```mermaid
+flowchart LR
+    D[Detect] --> S[Snapshot]
+    S --> R[Runbook]
+    R --> Rec[Recover]
+    Rec --> V[Validate]
+    V --> A[Audit]
+```
+
+- **Detect** — Prometheus alerts with runbook annotations
+- **Snapshot** — `scripts/capture_incident_snapshot.sh` captures cluster state
+- **Recover** — Kubernetes self-healing restores availability
+- **Validate** — MTTR measured against 30-second SLO
+- **Audit** — `report.md` and `result.json` archived per incident
+
+See [Operational Feedback Loop](docs/operational-feedback-loop.md) for full details.
 
 ---
 
@@ -210,7 +235,20 @@ k8s-resilience-pilot/
 │   └── ingress.yaml            # Path-based routing
 ├── monitoring/                 # Observability
 │   ├── grafana-dashboard.json  # Pre-built dashboard
-│   └── prometheus-rules.yaml   # Alerting rules
+│   ├── prometheus-rules.yaml   # Alerting rules
+│   └── alert-runbook-map.yaml  # Alert-to-runbook mappings
+├── scripts/                    # Automation
+│   ├── capture_incident_snapshot.sh  # Cluster state capture
+│   └── generate_incident_report.py   # SLO evaluation & report
+├── runbooks/                   # Incident runbooks
+│   ├── pod-crash.md            # Pod restart & CrashLoop recovery
+│   ├── high-latency.md         # Latency degradation response
+│   ├── dns-failure.md          # DNS resolution failure response
+│   └── deployment-rollback.md  # Rollback & replica scaling
+├── docs/                       # Documentation
+│   ├── operational-feedback-loop.md  # Incident lifecycle
+│   └── aws-deployment-plan.md        # AWS migration guide
+├── incidents/                  # (generated, gitignored)
 ├── .github/workflows/
 │   └── devsecops.yml          # CI/CD pipeline
 ├── setup.sh                    # Master setup script
@@ -288,6 +326,17 @@ This will:
 
 ---
 
+## 📚 Runbooks & Docs
+
+- [Operational Feedback Loop](docs/operational-feedback-loop.md)
+- [AWS Deployment Plan](docs/aws-deployment-plan.md)
+- [Pod Crash Runbook](runbooks/pod-crash.md)
+- [High Latency Runbook](runbooks/high-latency.md)
+- [DNS Failure Runbook](runbooks/dns-failure.md)
+- [Deployment Rollback Runbook](runbooks/deployment-rollback.md)
+
+---
+
 ## 📚 Further Reading
 
 - [Kubernetes Self-Healing](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
@@ -306,4 +355,3 @@ MIT License - feel free to use this for your own portfolio!
 <p align="center">
   Built with ❤️
 </p>
-# CI/CD trigger

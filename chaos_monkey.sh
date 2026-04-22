@@ -26,6 +26,8 @@ DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-resilience-pilot}"
 NAMESPACE="${NAMESPACE:-default}"
 SLO_RECOVERY_SECONDS=30
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Logging functions
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
@@ -129,6 +131,10 @@ wait_for_recovery() {
 # INJECT CHAOS
 # ============================================================================
 inject_chaos() {
+    INCIDENT_ID="INC-$(date -u +%Y%m%d%H%M%S)"
+    INCIDENT_DIR="incidents/${INCIDENT_ID}"
+    mkdir -p "${INCIDENT_DIR}"
+
     echo ""
     echo "============================================================================"
     echo -e "${MAGENTA}  🐒 CHAOS MONKEY - Kubernetes Self-Healing Demo${NC}"
@@ -150,13 +156,19 @@ inject_chaos() {
     echo ""
     log_chaos "💥 Terminating pod: ${victim_pod}"
     kubectl delete pod ${victim_pod} -n ${NAMESPACE} --grace-period=0 --force 2>/dev/null
+
+    mkdir -p "${INCIDENT_DIR}/snapshot-pre"
+    "${SCRIPT_DIR}/scripts/capture_incident_snapshot.sh" "${INCIDENT_DIR}/snapshot-pre" || log_warn "Pre-recovery snapshot failed"
     
     echo ""
     
     # Wait for recovery
     wait_for_recovery ${initial_count}
     local recovery_time=$?
-    
+
+    mkdir -p "${INCIDENT_DIR}/snapshot-post"
+    "${SCRIPT_DIR}/scripts/capture_incident_snapshot.sh" "${INCIDENT_DIR}/snapshot-post" || log_warn "Post-recovery snapshot failed"
+
     # Report results
     echo ""
     echo "============================================================================"
@@ -183,7 +195,28 @@ inject_chaos() {
     echo ""
     echo "============================================================================"
     echo ""
-    
+
+    local slo_met="false"
+    if [[ ${recovery_time} -le ${SLO_RECOVERY_SECONDS} ]]; then
+        slo_met="true"
+    fi
+
+    cat > "${INCIDENT_DIR}/result.json" <<EOF
+{
+  "incident_id": "${INCIDENT_ID}",
+  "failure_type": "pod-termination",
+  "victim_pod": "${victim_pod}",
+  "recovery_time_seconds": ${recovery_time},
+  "slo_target_seconds": ${SLO_RECOVERY_SECONDS},
+  "slo_met": ${slo_met},
+  "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+
+    python3 "${SCRIPT_DIR}/scripts/generate_incident_report.py" "${INCIDENT_DIR}" || log_warn "Report generation failed"
+
+    log_info "Artifacts: ${INCIDENT_DIR}/"
+
     # Print current state
     log_info "Current pod state:"
     kubectl get pods -n ${NAMESPACE} -l app=${DEPLOYMENT_NAME} -o wide

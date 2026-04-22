@@ -1,4 +1,4 @@
-# 🎯 Resilience Pilot - Usage Guide
+# 🎯 Kubernetes Reliability Platform - Usage Guide
 
 Complete guide to using your SRE and chaos engineering lab.
 
@@ -22,18 +22,20 @@ sequenceDiagram
     participant Chaos as Chaos Monkey
     participant K8s as Kubernetes
     participant Pods
+    participant Artifacts as Incidents Dir
 
     User->>Grafana: Open dashboard
     User->>LoadGen: Start generate-load.sh
     LoadGen->>Pods: Continuous HTTP requests
     Pods-->>Grafana: Metrics via Prometheus
     
-    User->>Chaos: Run demo-chaos.sh
+    User->>Chaos: Run chaos_monkey.sh
     Chaos->>K8s: Delete random pod
     K8s-->>Pods: Pod terminated
     Grafana-->>User: Shows pod count drop
     K8s->>Pods: Create new pod (self-heal)
     Grafana-->>User: Shows recovery
+    Chaos->>Artifacts: Write incident dir (snapshots, result.json, report.md)
     
     Note over User,Pods: MTTR target: < 30 seconds
 ```
@@ -63,8 +65,10 @@ kubectl port-forward -n argocd svc/argocd-server 8443:443
 ### Run Chaos Experiment
 ```bash
 # In another terminal
-./demo-chaos.sh
+./chaos_monkey.sh
 ```
+
+> **Note**: `demo-chaos.sh` is deprecated in favor of `chaos_monkey.sh`.
 
 ---
 
@@ -158,15 +162,23 @@ watch kubectl get pods -l app=resilience-pilot
 
 ### Experiment 2: Automated Chaos Demo
 ```bash
-./demo-chaos.sh
+./chaos_monkey.sh
 ```
 
 This script:
 1. Shows current pod status
-2. Starts background load generation
+2. Captures a pre-incident snapshot of cluster state
 3. Kills a random pod
 4. Monitors recovery for 30 seconds
-5. Shows final status
+5. Captures a post-incident snapshot
+6. Evaluates SLO compliance and generates incident artifacts
+
+After running, an `incidents/INC-*` directory is created containing:
+- **snapshot-pre/** / **snapshot-post/** — Cluster state before and after
+- **result.json** — SLO evaluation with MTTR measurement
+- **report.md** — Human-readable incident report
+
+> **Note**: `demo-chaos.sh` is deprecated. Use `chaos_monkey.sh` for full incident artifact capture.
 
 **Watch in Grafana**:
 - Open Grafana dashboard before running
@@ -195,6 +207,56 @@ done
 - Request rate stays constant
 - Error rate should remain low (< 1%)
 - Response time may spike briefly
+
+### Incident Artifacts
+
+Every `chaos_monkey.sh` run produces a timestamped incident directory under `incidents/`.
+
+#### Directory Structure
+```
+incidents/
+└── INC-20260422-143052/
+    ├── result.json          # SLO evaluation data
+    ├── report.md            # Human-readable incident report
+    ├── snapshot-pre/        # Pre-recovery cluster context
+    │   ├── pods.txt
+    │   ├── events.txt
+    │   └── ...
+    └── snapshot-post/       # Post-recovery cluster context
+        ├── pods.txt
+        ├── events.txt
+        └── ...
+```
+
+#### Reading result.json
+The `result.json` file contains the machine-readable SLO evaluation:
+
+| Field | Description |
+|-------|-------------|
+| `incident_id` | Unique incident identifier (e.g., `INC-20260422-143052`) |
+| `failure_type` | Failure injected by the experiment |
+| `recovery_time_seconds` | Measured Mean Time To Recovery |
+| `slo_target_seconds` | SLO threshold (default: 30) |
+| `slo_met` | `true` if MTTR is within target |
+| `victim_pod` | Name of the terminated pod |
+| `timestamp_utc` | ISO 8601 UTC incident timestamp |
+
+#### Reading report.md
+The `report.md` file is a human-readable summary containing:
+- Incident metadata and SLO evaluation
+- Pre and post recovery pod state excerpts
+- Runbook reference for remediation
+- Generation timestamp for auditability
+
+#### How Snapshots Work
+`scripts/capture_incident_snapshot.sh` collects cluster context at a point in time:
+- Pod list with statuses and restart counts
+- Deployment and ReplicaSet state
+- Node resource usage
+- Recent events from the namespace
+- Application logs and pod descriptions
+
+These snapshots enable before/after comparison and post-incident review.
 
 ### Measuring MTTR (Mean Time To Recovery)
 ```bash
@@ -326,8 +388,10 @@ kubectl port-forward svc/resilience-pilot 8080:8000
 ./generate-load.sh &
 
 # Then run chaos
-./demo-chaos.sh
+./chaos_monkey.sh
 ```
+
+> **Note**: `demo-chaos.sh` is deprecated. Use `chaos_monkey.sh` for incident artifact capture.
 
 ### CI/CD Pipeline Failing
 
@@ -399,9 +463,10 @@ argocd app sync resilience-pilot
    - Explain each panel
 
 3. **Run Chaos Experiment**:
-   - Run `./demo-chaos.sh`
-   - Watch Grafana dashboard
-   - Show how quickly it recovers
+    - Run `./chaos_monkey.sh`
+    - Watch Grafana dashboard
+    - Show how quickly it recovers
+    - Review the incident artifacts in `incidents/INC-*`
 
 4. **Show GitOps**:
    - Show recent GitHub Actions run

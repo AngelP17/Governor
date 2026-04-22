@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "SRE Dashboard for The Resilience Pilot - Tracks pod health, request metrics, and self-healing events",
+  "description": "SRE Dashboard for the Kubernetes Reliability Platform - Tracks pod health, request metrics, and self-healing events",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -397,7 +397,7 @@
   "time": { "from": "now-15m", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "The Resilience Pilot",
+  "title": "Kubernetes Reliability Platform",
   "uid": "resilience-pilot",
   "version": 1,
   "weekStart": ""

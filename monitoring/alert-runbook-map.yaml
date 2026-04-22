@@ -1,0 +1,31 @@
+alerts:
+  HighPodRestartRate:
+    severity: warning
+    runbook: runbooks/pod-crash.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    description: "Pod restart count exceeds threshold within 5 minutes"
+  PodCrashLoopBackOff:
+    severity: critical
+    runbook: runbooks/pod-crash.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    description: "Pod stuck in CrashLoopBackOff state"
+  HighErrorRate:
+    severity: warning
+    runbook: runbooks/deployment-rollback.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    description: "HTTP 5xx error rate exceeds 5%"
+  HighLatencyP95:
+    severity: warning
+    runbook: runbooks/high-latency.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    description: "P95 latency exceeds 500ms on health endpoint"
+  InsufficientReplicas:
+    severity: warning
+    runbook: runbooks/deployment-rollback.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    description: "Available replicas below desired count"
+  ServiceDown:
+    severity: critical
+    runbook: runbooks/pod-crash.md
+    snapshot_script: scripts/capture_incident_snapshot.sh
+    description: "No available replicas for the deployment"
