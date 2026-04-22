@@ -122,10 +122,14 @@ def main():
                 lines.append("")
                 lines.append("| Field | Value |")
                 lines.append("|-------|-------|")
-                lines.append(f"| Script | `{decision_data.get('script', 'N/A')}` |")
+                lines.append(
+                    f"| Script | `{decision_data.get('remediation_script', 'N/A')}` |"
+                )
                 lines.append(f"| Decision | `{decision_data.get('decision', 'N/A')}` |")
                 lines.append(f"| Reason | `{decision_data.get('reason', 'N/A')}` |")
-                lines.append(f"| Mode | `{decision_data.get('mode', 'N/A')}` |")
+                lines.append(
+                    f"| Mode | `{decision_data.get('operator_mode', 'N/A')}` |"
+                )
                 lines.append("")
             except (json.JSONDecodeError, OSError):
                 pass

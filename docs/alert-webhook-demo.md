@@ -38,14 +38,14 @@ curl -X POST http://localhost:9095/alert \
       {
         "status": "firing",
         "labels": {
-          "alertname": "PodCrashLooping",
-          "namespace": "resilience-pilot",
+          "alertname": "PodCrashLoopBackOff",
+          "namespace": "default",
           "severity": "critical",
-          "pod": "demo-app-7d9f8b6c4-x2kjl"
+          "pod": "resilience-pilot-7d9f8b6c4-x2kjl"
         },
         "annotations": {
-          "summary": "Pod demo-app is crash looping",
-          "description": "Pod demo-app-7d9f8b6c4-x2kjl in namespace resilience-pilot has restarted 5 times in the last 10 minutes."
+          "summary": "Pod is in CrashLoopBackOff state",
+          "description": "Pod resilience-pilot-7d9f8b6c4-x2kjl in namespace default has restarted 5 times in the last 10 minutes."
         },
         "startsAt": "2026-04-22T10:00:00Z",
         "endsAt": "0001-01-01T00:00:00Z",
@@ -53,27 +53,27 @@ curl -X POST http://localhost:9095/alert \
       }
     ],
     "groupLabels": {
-      "alertname": "PodCrashLooping",
-      "namespace": "resilience-pilot"
+      "alertname": "PodCrashLoopBackOff",
+      "namespace": "default"
     },
     "commonLabels": {
-      "alertname": "PodCrashLooping",
-      "namespace": "resilience-pilot",
+      "alertname": "PodCrashLoopBackOff",
+      "namespace": "default",
       "severity": "critical"
     },
     "commonAnnotations": {
-      "summary": "Pod demo-app is crash looping"
+      "summary": "Pod is in CrashLoopBackOff state"
     },
     "externalURL": "http://alertmanager:9093",
     "version": "4",
-    "groupKey": "{}/{}/{}:{alertname=\"PodCrashLooping\", namespace=\"resilience-pilot\"}"
+    "groupKey": "{}/{}/{}:{alertname=\"PodCrashLoopBackOff\", namespace=\"default\"}"
   }'
 ```
 
 Expected response:
 
 ```json
-{"status": "captured", "incident_id": "INC-20260422T100000Z-PodCrashLooping"}
+{"status": "captured", "incident_id": "INC-20260422T100000Z-PodCrashLoopBackOff"}
 ```
 
 ## Verify Capture
@@ -81,7 +81,7 @@ Expected response:
 Check the created incident directory:
 
 ```bash
-ls incidents/INC-20260422T100000Z-PodCrashLooping/
+ls incidents/INC-*PodCrashLoopBackOff/
 ```
 
 Expected files:
@@ -102,13 +102,13 @@ A minimal Alertmanager webhook payload for testing:
     {
       "status": "firing",
       "labels": {
-        "alertname": "PodCrashLooping",
-        "namespace": "resilience-pilot",
+        "alertname": "PodCrashLoopBackOff",
+        "namespace": "default",
         "severity": "critical",
-        "pod": "demo-app-7d9f8b6c4-x2kjl"
+        "pod": "resilience-pilot-7d9f8b6c4-x2kjl"
       },
       "annotations": {
-        "summary": "Pod demo-app is crash looping",
+        "summary": "Pod is in CrashLoopBackOff state",
         "description": "Pod has restarted 5 times in the last 10 minutes."
       },
       "startsAt": "2026-04-22T10:00:00Z",
@@ -116,18 +116,18 @@ A minimal Alertmanager webhook payload for testing:
     }
   ],
   "groupLabels": {
-    "alertname": "PodCrashLooping"
+    "alertname": "PodCrashLoopBackOff"
   },
   "commonLabels": {
-    "alertname": "PodCrashLooping",
+    "alertname": "PodCrashLoopBackOff",
     "severity": "critical"
   },
   "commonAnnotations": {
-    "summary": "Pod demo-app is crash looping"
+    "summary": "Pod is in CrashLoopBackOff state"
   },
   "externalURL": "http://alertmanager:9093",
   "version": "4",
-  "groupKey": "{}/{}/{}:{alertname=\"PodCrashLooping\"}"
+  "groupKey": "{}/{}/{}:{alertname=\"PodCrashLoopBackOff\"}"
 }
 ```
 

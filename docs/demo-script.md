@@ -67,7 +67,7 @@ Wait for output showing recovery time and SLO result. Point out the `INC-*` inci
 ls incidents/INC-*/
 cat incidents/INC-*/result.json
 cat incidents/INC-*/report.md
-ls incidents/INC-*/snapshots/
+ls incidents/INC-*/snapshot-pre/
 ```
 
 **Key talking point:** Demonstrates incident documentation discipline and the closed-loop artifact chain.
@@ -82,9 +82,13 @@ ls incidents/INC-*/snapshots/
 
 ```bash
 # Quick webhook demo
-curl -X POST http://localhost:9100/webhook -H 'Content-Type: application/json' \
-  -d '{"alert_name":"HighPodRestartRate","severity":"warning"}'
-cat webhook_alerts/alert-context-*.json | tail -1
+python3 scripts/alert_webhook_receiver.py --port 9095 &
+sleep 1
+curl -X POST http://localhost:9095/alert \
+  -H 'Content-Type: application/json' \
+  -d '{"receiver":"webhook-local","status":"firing","alerts":[{"status":"firing","labels":{"alertname":"HighPodRestartRate","namespace":"default","severity":"warning"},"annotations":{"summary":"High pod restart rate detected"},"startsAt":"2026-04-22T10:00:00Z"}]}'
+ls incidents/INC-*-HighPodRestartRate/alert-context.json
+kill %1 2>/dev/null
 
 # Summary
 python3 scripts/summarize_experiments.py

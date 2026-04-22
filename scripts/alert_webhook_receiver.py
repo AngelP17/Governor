@@ -34,7 +34,8 @@ def load_runbook_map(map_file):
 
 
 def lookup_runbook_info(map_data, alert_name):
-    entry = map_data.get(alert_name, {})
+    alerts = map_data.get("alerts", {})
+    entry = alerts.get(alert_name, {})
     if not isinstance(entry, dict):
         entry = {}
     return {
