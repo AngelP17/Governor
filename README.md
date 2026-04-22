@@ -8,78 +8,105 @@ Built for technical interviews and portfolio demonstrations. 100% local executio
 
 ---
 
-## 🏗️ Architecture
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the full system architecture with detailed Mermaid diagrams covering cluster topology, data flow, incident workflow, CI/CD pipeline, and observability stack.
+
+### Cluster Overview
 
 ```mermaid
 graph TB
-    subgraph "Local Machine"
-        subgraph "k3d Cluster: resilience-pilot"
-            LB[LoadBalancer<br/>:8080 → :80]
-            
-            subgraph "Control Plane"
-                S1[Server Node<br/>k3d-resilience-pilot-server-0]
+    subgraph LocalHost["Local Machine"]
+        User["User / CI"]
+        subgraph k3d["k3d Cluster: resilience-pilot"]
+            LB["LoadBalancer<br/>:8080 → :80"]
+            subgraph CP["Control Plane"]
+                S1["Server Node"]
             end
-            
-            subgraph "Worker Nodes"
-                A1[Agent Node 1<br/>k3d-resilience-pilot-agent-0]
-                A2[Agent Node 2<br/>k3d-resilience-pilot-agent-1]
+            subgraph WN["Worker Nodes"]
+                A1["Agent Node 0"]
+                A2["Agent Node 1"]
             end
-            
+            subgraph NS["Namespace: default"]
+                P1["FastAPI Pod 1"]
+                P2["FastAPI Pod 2"]
+                P3["FastAPI Pod 3"]
+                SVC["Service<br/>ClusterIP :8000"]
+            end
+            subgraph Mon["Namespace: monitoring"]
+                PROM["Prometheus Server"]
+                GRAF["Grafana Dashboard"]
+                ALERTS["Alert Rules<br/>6 SLO-based alerts"]
+            end
+            subgraph GitNS["Namespace: argocd"]
+                ARGO["ArgoCD Controller"]
+            end
             LB --> S1
             S1 --> A1
             S1 --> A2
+            A1 --> P1
+            A1 --> P2
+            A2 --> P3
+            P1 --- SVC
+            P2 --- SVC
+            P3 --- SVC
+            SVC -.->|":8080 /metrics"| PROM
+            PROM --> GRAF
+            PROM --> ALERTS
+            ARGO -.->|"reconcile"| NS
         end
     end
-    
-    User[👤 User] --> |http://localhost:8080| LB
-    
-    subgraph "Workloads"
-        Pod1[FastAPI Pod 1]
-        Pod2[FastAPI Pod 2]
-        Pod3[FastAPI Pod 3]
-    end
-    
-    A1 --> Pod1
-    A1 --> Pod2
-    A2 --> Pod3
-    
-    style LB fill:#e1f5fe
-    style S1 fill:#fff3e0
-    style A1 fill:#e8f5e9
-    style A2 fill:#e8f5e9
-    style Pod1 fill:#fce4ec
-    style Pod2 fill:#fce4ec
-    style Pod3 fill:#fce4ec
+    User -->|"http://localhost:8080"| LB
+    ARGO -->|"pull"| GH["GitHub Repo<br/>manifests/"]
+
+    style LB fill:#e1f5fe,stroke:#0288d1
+    style S1 fill:#fff3e0,stroke:#f57c00
+    style A1 fill:#e8f5e9,stroke:#388e3c
+    style A2 fill:#e8f5e9,stroke:#388e3c
+    style P1 fill:#fce4ec,stroke:#c62828
+    style P2 fill:#fce4ec,stroke:#c62828
+    style P3 fill:#fce4ec,stroke:#c62828
+    style PROM fill:#ede7f6,stroke:#5e35b1
+    style GRAF fill:#ede7f6,stroke:#5e35b1
+    style ALERTS fill:#ede7f6,stroke:#5e35b1
+    style ARGO fill:#e0f2f1,stroke:#00796b
 ```
 
----
+### Closed-Loop Incident Workflow
 
-## Operational Incident Workflow
-
-Every chaos experiment follows a closed-loop audit trail:
-
-`detect → snapshot → runbook → recover → validate → audit`
+Every chaos experiment follows an auditable six-phase lifecycle:
 
 ```mermaid
 flowchart LR
-    D[Detect] --> S[Snapshot]
-    S --> R[Runbook]
-    R --> Rec[Recover]
-    Rec --> V[Validate]
-    V --> A[Audit]
+    D["Detect"] --> S["Snapshot"]
+    S --> R["Runbook"]
+    R --> Rec["Recover"]
+    Rec --> V["Validate"]
+    V --> A["Audit"]
+    A -.->|"feedback"| D
+
+    style D fill:#ffcdd2,stroke:#c62828
+    style S fill:#fff9c4,stroke:#f9a825
+    style R fill:#e1f5fe,stroke:#0288d1
+    style Rec fill:#e8f5e9,stroke:#388e3c
+    style V fill:#ede7f6,stroke:#5e35b1
+    style A fill:#e0f2f1,stroke:#00796b
 ```
 
-- **Detect** — Prometheus alerts with runbook annotations
-- **Snapshot** — `scripts/capture_incident_snapshot.sh` captures cluster state
-- **Recover** — Kubernetes self-healing restores availability
-- **Validate** — MTTR measured against 30-second SLO
-- **Audit** — `report.md` and `result.json` archived per incident
+| Phase | Tool | Artifact |
+|-------|------|----------|
+| **Detect** | Prometheus alerts (6 rules) | Alert with runbook annotation |
+| **Snapshot** | `scripts/capture_incident_snapshot.sh` | `snapshot-pre/` with pods, events, logs |
+| **Runbook** | `runbooks/*.md` via `alert-runbook-map.yaml` | Structured remediation steps |
+| **Recover** | Kubernetes self-healing (probes, Deployment controller) | Pod replacement in ~8s |
+| **Validate** | `chaos_monkey.sh` SLO check | `result.json` with `slo_met` field |
+| **Audit** | `scripts/generate_incident_report.py` | `report.md` for post-mortem |
 
-See [Operational Feedback Loop](docs/operational-feedback-loop.md) for full details.
+See [Operational Feedback Loop](docs/operational-feedback-loop.md) for the full sequence diagram.
 
 ---
 
-## 📊 SRE Metrics & SLOs
+## SRE Metrics & SLOs
 
 | Metric | Target SLO | Description |
 |--------|------------|-------------|
@@ -90,7 +117,7 @@ See [Operational Feedback Loop](docs/operational-feedback-loop.md) for full deta
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -131,7 +158,7 @@ That's it! The setup script will:
 
 ---
 
-## 🎮 Demo Workflow
+## Demo Workflow
 
 ### 1. Access the Application
 
@@ -190,21 +217,22 @@ kubectl port-forward svc/argocd-server 8443:443 -n argocd
 
 ---
 
-## 🔄 CI/CD Pipeline
+## CI/CD Pipeline
 
 ```mermaid
 flowchart LR
-    A[📝 Code Push] --> B[🔍 Lint & Scan<br/>Bandit]
-    B --> C[🏗️ Build<br/>Docker Image]
-    C --> D{🛡️ Trivy Scan<br/>CRITICAL?}
-    D -->|Pass| E[📦 Push to<br/>Docker Hub]
-    D -->|Fail| F[❌ Block<br/>Release]
-    E --> G[🔄 Update<br/>Manifests]
-    G --> H[🚀 ArgoCD<br/>Auto-Sync]
-    
-    style D fill:#fff3e0
-    style F fill:#ffebee
-    style H fill:#e8f5e9
+    A["Code Push"] --> B["Lint & Scan<br/>Bandit"]
+    B --> C["Build<br/>Docker Image"]
+    C --> D{"Trivy Scan<br/>CRITICAL?"}
+    D -->|"Pass"| E["Push to<br/>Docker Hub"]
+    D -->|"Fail"| F["Block<br/>Release"]
+    E --> G["Update<br/>Manifests"]
+    G --> H["ArgoCD<br/>Auto-Sync"]
+    H --> I["Rolling Update<br/>3 replicas, 0 downtime"]
+
+    style D fill:#fff3e0,stroke:#f57c00
+    style F fill:#ffebee,stroke:#c62828
+    style I fill:#e8f5e9,stroke:#388e3c
 ```
 
 ### Pipeline Jobs
@@ -217,7 +245,7 @@ flowchart LR
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 k8s-resilience-pilot/
@@ -261,7 +289,7 @@ k8s-resilience-pilot/
 
 ---
 
-## 💡 Skills Demonstrated
+## Skills Demonstrated
 
 ### Infrastructure & Automation
 - ✅ **Terraform** - Infrastructure as Code for k3d clusters
@@ -293,7 +321,7 @@ k8s-resilience-pilot/
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -313,7 +341,7 @@ k8s-resilience-pilot/
 
 ---
 
-## 🧹 Cleanup
+## Cleanup
 
 ```bash
 ./cleanup.sh
@@ -326,8 +354,9 @@ This will:
 
 ---
 
-## 📚 Runbooks & Docs
+## Runbooks & Docs
 
+- [Architecture](docs/architecture.md) - Full system architecture with Mermaid diagrams
 - [Operational Feedback Loop](docs/operational-feedback-loop.md)
 - [AWS Deployment Plan](docs/aws-deployment-plan.md)
 - [Pod Crash Runbook](runbooks/pod-crash.md)
@@ -337,7 +366,7 @@ This will:
 
 ---
 
-## 📚 Further Reading
+## Further Reading
 
 - [Kubernetes Self-Healing](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
 - [SRE Book - Google](https://sre.google/sre-book/table-of-contents/)
@@ -346,12 +375,9 @@ This will:
 
 ---
 
-## 📝 License
+## License
 
 MIT License - feel free to use this for your own portfolio!
 
 ---
 
-<p align="center">
-  Built with ❤️
-</p>
