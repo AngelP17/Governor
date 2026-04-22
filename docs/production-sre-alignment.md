@@ -55,7 +55,7 @@ This lab is designed as a portable foundation for production deployment. The mig
 This project enforces a strict safety model for all remediation actions:
 
 1. **Operator-invoked, not automatic.** Remediation scripts are executed by a human operator. No script triggers autonomously from alerts.
-2. **Webhook receiver is capture-only.** The alert webhook receiver (`webhook_receiver.py`) records alert context as JSON artifacts. It does not execute remediation.
+2. **Webhook receiver is capture-only.** The alert webhook receiver (`alert_webhook_receiver.py`) records alert context as JSON artifacts. It does not execute remediation.
 3. **All remediation supports `DRY_RUN=true`.** Every remediation script accepts a `DRY_RUN` environment variable that logs intended actions without executing them.
 4. **All actions produce append-only audit logs.** Every remediation decision, whether action taken or not, is recorded in a JSON decision file with a timestamp.
 5. **"No action required" is a valid, audited outcome.** If the system has already self-healed, the remediation script records `no-action` with the reason. This is the expected outcome for most pod-termination incidents in a healthy cluster.
