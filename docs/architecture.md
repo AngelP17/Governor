@@ -13,9 +13,11 @@ Full system architecture for the Kubernetes Reliability Platform. All diagrams u
 5. [Closed-Loop Incident Workflow](#closed-loop-incident-workflow)
 6. [Incident Artifact Flow](#incident-artifact-flow)
 7. [Alert-to-Runbook Mapping](#alert-to-runbook-mapping)
-8. [GitOps Reconciliation](#gitops-reconciliation)
-9. [Networking](#networking)
-10. [AWS Migration Path](#aws-migration-path)
+8. [Remediation Safety Model](#remediation-safety-model)
+9. [Webhook Capture Flow](#webhook-capture-flow)
+10. [GitOps Reconciliation](#gitops-reconciliation)
+11. [Networking](#networking)
+12. [AWS Migration Path](#aws-migration-path)
 
 ---
 
@@ -317,6 +319,57 @@ flowchart LR
 
 ---
 
+## Remediation Safety Model
+
+Safety boundaries and explicit out-of-scope boundaries for all remediation scripts.
+
+```mermaid
+flowchart TB
+    subgraph Safe["Safety Boundaries"]
+        DRY["DRY_RUN=true<br/>Log only, no mutations"]
+        VAL["Validate First<br/>Check rollout state before action"]
+        IDMP["Idempotent<br/>Safe to run multiple times"]
+        LOG["Append-Only Log<br/>remediation.log + decision.json"]
+    end
+
+    subgraph NOTSAFE["Explicitly Out of Scope"]
+        AUTO["No auto-remediation<br/>from webhook alerts"]
+        SKIP["No skip validation<br/>checks are mandatory"]
+    end
+
+    DRY --> VAL --> IDMP --> LOG
+
+    style Safe fill:#e8f5e9,stroke:#388e3c
+    style NOTSAFE fill:#ffebee,stroke:#c62828
+```
+
+---
+
+## Webhook Capture Flow
+
+Alertmanager webhook receiver creates incident artifacts without triggering remediation.
+
+```mermaid
+sequenceDiagram
+    participant AM as Alertmanager
+    participant WH as Webhook Receiver<br/>:9095
+    participant FS as Filesystem<br/>incidents/
+    participant MAP as alert-runbook-map.yaml
+
+    AM->>WH: POST /alert (JSON payload)
+    WH->>WH: Parse alert name + severity
+    WH->>MAP: Look up runbook + snapshot script
+    WH->>FS: Create incidents/INC-<ts>-<alertname>/
+    WH->>FS: Write alert.json (raw payload)
+    WH->>FS: Write alert-context.json (normalized)
+    WH->>WH: Run capture_incident_snapshot.sh (if available)
+    WH-->>AM: 200 OK {"status": "captured"}
+
+    Note over WH,FS: No remediation triggered<br/>Operator invokes remediate_*.sh manually
+```
+
+---
+
 ## GitOps Reconciliation
 
 ArgoCD watches the Git repository and reconciles cluster state with declared manifests.
@@ -431,6 +484,10 @@ flowchart LR
 
 ## Related
 
+- [Remediation Contract](remediation-contract.md)
+- [Production SRE Alignment](production-sre-alignment.md)
+- [Demo Script](demo-script.md)
+- [Alert Webhook Demo](alert-webhook-demo.md)
 - [Operational Feedback Loop](operational-feedback-loop.md) - Full incident lifecycle documentation
 - [AWS Deployment Plan](aws-deployment-plan.md) - k3d to EKS migration guide
 - [Pod Crash Runbook](../runbooks/pod-crash.md)

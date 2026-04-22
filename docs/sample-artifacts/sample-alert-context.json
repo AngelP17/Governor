@@ -1,0 +1,12 @@
+{
+  "incident_id": "INC-20260422153100-HighPodRestartRate",
+  "source": "alert",
+  "alert_name": "HighPodRestartRate",
+  "severity": "warning",
+  "status": "firing",
+  "namespace": "default",
+  "timestamp_utc": "2026-04-22T15:31:00Z",
+  "runbook": "runbooks/pod-crash.md",
+  "snapshot_script": "scripts/capture_incident_snapshot.sh",
+  "description": "Pod restart count exceeds threshold within 5 minutes"
+}

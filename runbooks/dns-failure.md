@@ -135,6 +135,24 @@ kubectl get pods -l app=resilience-pilot -n default
 curl -s -o /dev/null -w "%{http_code}" http://<service-endpoint>/health
 ```
 
+## Remediation Script
+
+```bash
+scripts/remediate_pod_crash.sh <INCIDENT_DIR>
+```
+
+Dry-run mode (log only, no mutations):
+
+```bash
+DRY_RUN=true scripts/remediate_pod_crash.sh incidents/INC-xxx
+```
+
+The script produces:
+- `remediation.log` — append-only log of actions taken
+- `remediation-decision.json` — machine-readable decision record
+
+A result of "no action required" is a valid audited outcome.
+
 ## Capture Artifacts
 
 ```bash

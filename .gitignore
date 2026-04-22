@@ -14,3 +14,12 @@ terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/terraform.tfstate*
+
+# Demo assets (generated)
+docs/demo-assets/*
+!docs/demo-assets/.gitkeep
+
+# Python cache
+*.egg-info/
+dist/
+build/

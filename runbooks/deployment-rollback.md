@@ -126,6 +126,24 @@ kubectl rollout history deployment/resilience-pilot -n default --revision=<worki
 
 Document findings and update the deployment checklist if needed.
 
+## Remediation Script
+
+```bash
+scripts/remediate_deployment_rollback.sh <INCIDENT_DIR>
+```
+
+Dry-run mode (log only, no mutations):
+
+```bash
+DRY_RUN=true scripts/remediate_deployment_rollback.sh incidents/INC-xxx
+```
+
+The script produces:
+- `remediation.log` — append-only log of actions taken
+- `remediation-decision.json` — machine-readable decision record
+
+A result of "no action required" is a valid audited outcome.
+
 ## Capture Artifacts
 
 ```bash

@@ -246,3 +246,43 @@ jobs:
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate-repo:
+    name: Validate Repo Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install validation dependencies
+        run: pip install pyyaml
+
+      - name: Validate shell scripts
+        run: |
+          bash -n chaos_monkey.sh
+          bash -n demo-chaos.sh
+          bash -n scripts/capture_incident_snapshot.sh
+          bash -n scripts/remediate_pod_crash.sh
+          bash -n scripts/remediate_high_latency.sh
+          bash -n scripts/remediate_deployment_rollback.sh
+
+      - name: Validate Python scripts
+        run: |
+          python3 -m py_compile scripts/generate_incident_report.py
+          python3 -m py_compile scripts/alert_webhook_receiver.py
+          python3 -m py_compile scripts/summarize_experiments.py
+
+      - name: Validate YAML files
+        run: |
+          python3 -c "import yaml; [yaml.safe_load(open(f)) for f in ['monitoring/alert-runbook-map.yaml', 'monitoring/alertmanager-sample.yaml', 'monitoring/prometheus-rules.yaml']]"
+
+      - name: Validate JSON artifacts
+        run: |
+          python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('docs/sample-artifacts/*.json')]"
+          python3 -c "import json; json.load(open('monitoring/grafana-dashboard.json'))"

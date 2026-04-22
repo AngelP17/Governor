@@ -1,0 +1,19 @@
+# Sample Alertmanager configuration for webhook integration testing.
+# This is NOT a Kubernetes manifest. Use with: alertmanager --config.file=alertmanager-sample.yaml
+# For local testing only. Do NOT deploy to production.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'namespace']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'webhook-local'
+
+receivers:
+  - name: 'webhook-local'
+    webhook_configs:
+      - url: 'http://host.docker.internal:9095/alert'
+        send_resolved: true

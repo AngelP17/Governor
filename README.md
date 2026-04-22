@@ -267,7 +267,12 @@ k8s-resilience-pilot/
 │   └── alert-runbook-map.yaml  # Alert-to-runbook mappings
 ├── scripts/                    # Automation
 │   ├── capture_incident_snapshot.sh  # Cluster state capture
-│   └── generate_incident_report.py   # SLO evaluation & report
+│   ├── generate_incident_report.py   # SLO evaluation & report
+│   ├── alert_webhook_receiver.py     # Alertmanager webhook (capture-only)
+│   ├── summarize_experiments.py      # Cross-incident summary
+│   ├── remediate_pod_crash.sh        # Pod crash remediation
+│   ├── remediate_high_latency.sh     # Latency remediation
+│   └── remediate_deployment_rollback.sh  # Rollback remediation
 ├── runbooks/                   # Incident runbooks
 │   ├── pod-crash.md            # Pod restart & CrashLoop recovery
 │   ├── high-latency.md         # Latency degradation response
@@ -313,6 +318,7 @@ k8s-resilience-pilot/
 - ✅ **Self-Healing** - Liveness/Readiness probes
 - ✅ **Chaos Engineering** - Controlled failure injection
 - ✅ **MTTR Measurement** - Quantified recovery times
+- ✅ **Remediation Scripts** - Dry-run validated, audited remediation with decision records
 
 ### Application Development
 - ✅ **Python/FastAPI** - Modern async API framework
@@ -341,6 +347,51 @@ k8s-resilience-pilot/
 
 ---
 
+## Automation
+
+### Remediation Scripts
+
+Each runbook has an associated remediation script that supports dry-run mode:
+
+```bash
+DRY_RUN=true scripts/remediate_pod_crash.sh incidents/INC-20260422153045
+```
+
+All remediation scripts produce append-only `remediation.log` and machine-readable `remediation-decision.json`.
+
+### Alert Webhook (Capture-Only)
+
+```bash
+python3 scripts/alert_webhook_receiver.py --port 9095
+```
+
+Accepts Alertmanager webhooks and creates incident artifacts. Does NOT auto-remediate.
+
+### Experiment Summary
+
+```bash
+python3 scripts/summarize_experiments.py
+```
+
+Aggregates all incident directories into `incidents/experiment-summary.md`.
+
+See [Remediation Contract](docs/remediation-contract.md) for the full safety model.
+
+## Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `make validate` | Run all validations (shell, python, yaml, json) |
+| `make validate-shell` | Check shell script syntax |
+| `make validate-python` | Compile-check Python scripts |
+| `make validate-yaml` | Parse all YAML files |
+| `make validate-json` | Parse all JSON artifacts |
+| `make validate-summary` | Test summary script on sample data |
+| `make chaos` | Run chaos monkey |
+| `make webhook-demo` | Start webhook receiver on :9095 |
+| `make summary` | Generate experiment summary |
+| `make clean` | Remove generated incident artifacts |
+
 ## Cleanup
 
 ```bash
@@ -357,6 +408,10 @@ This will:
 ## Runbooks & Docs
 
 - [Architecture](docs/architecture.md) - Full system architecture with Mermaid diagrams
+- [Remediation Contract](docs/remediation-contract.md)
+- [Production SRE Alignment](docs/production-sre-alignment.md)
+- [Demo Script](docs/demo-script.md)
+- [Alert Webhook Demo](docs/alert-webhook-demo.md)
 - [Operational Feedback Loop](docs/operational-feedback-loop.md)
 - [AWS Deployment Plan](docs/aws-deployment-plan.md)
 - [Pod Crash Runbook](runbooks/pod-crash.md)

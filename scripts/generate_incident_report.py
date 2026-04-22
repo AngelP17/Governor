@@ -95,6 +95,41 @@ def main():
         lines.append("_No post-recovery snapshot available._")
     lines.append("")
 
+    remediation_log = incident_dir / "remediation.log"
+    remediation_decision = incident_dir / "remediation-decision.json"
+    has_remediation_log = remediation_log.exists()
+    has_remediation_decision = remediation_decision.exists()
+
+    if has_remediation_log or has_remediation_decision:
+        lines.append("## Remediation Summary")
+        lines.append("")
+
+        if has_remediation_log:
+            log_lines = read_lines(remediation_log, max_lines=15)
+            if log_lines:
+                lines.append("### Remediation Log (first 15 lines)")
+                lines.append("")
+                lines.append("```")
+                lines.extend(log_lines)
+                lines.append("```")
+                lines.append("")
+
+        if has_remediation_decision:
+            try:
+                with open(remediation_decision) as df:
+                    decision_data = json.load(df)
+                lines.append("### Remediation Decision")
+                lines.append("")
+                lines.append("| Field | Value |")
+                lines.append("|-------|-------|")
+                lines.append(f"| Script | `{decision_data.get('script', 'N/A')}` |")
+                lines.append(f"| Decision | `{decision_data.get('decision', 'N/A')}` |")
+                lines.append(f"| Reason | `{decision_data.get('reason', 'N/A')}` |")
+                lines.append(f"| Mode | `{decision_data.get('mode', 'N/A')}` |")
+                lines.append("")
+            except (json.JSONDecodeError, OSError):
+                pass
+
     lines.append("## Runbook Reference")
     lines.append("")
     lines.append(

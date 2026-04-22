@@ -101,6 +101,24 @@ curl -s -o /dev/null -w "%{http_code}\n" http://<service-endpoint>/health
 
 Check the Grafana latency dashboard for the P95 graph returning to normal.
 
+## Remediation Script
+
+```bash
+scripts/remediate_high_latency.sh <INCIDENT_DIR>
+```
+
+Dry-run mode (log only, no mutations):
+
+```bash
+DRY_RUN=true scripts/remediate_high_latency.sh incidents/INC-xxx
+```
+
+The script produces:
+- `remediation.log` — append-only log of actions taken
+- `remediation-decision.json` — machine-readable decision record
+
+A result of "no action required" is a valid audited outcome.
+
 ## Capture Artifacts
 
 ```bash
