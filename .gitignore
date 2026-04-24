@@ -8,6 +8,7 @@ incidents/INC-*
 # Python
 __pycache__/
 *.py[cod]
+.venv/
 
 # Terraform
 terraform/.terraform/
@@ -18,6 +19,12 @@ terraform/terraform.tfstate*
 # Demo assets (generated)
 docs/demo-assets/*
 !docs/demo-assets/.gitkeep
+
+# Frontend
+node_modules/
+ui/node_modules/
+ui/dist/
+*.tsbuildinfo
 
 # Python cache
 *.egg-info/

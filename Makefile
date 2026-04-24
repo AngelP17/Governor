@@ -1,4 +1,4 @@
-.PHONY: validate validate-shell validate-python validate-yaml validate-json validate-summary validate-k8s validate-policy doctor chaos webhook-demo summary clean
+.PHONY: validate validate-shell validate-python validate-yaml validate-json validate-summary validate-k8s validate-policy doctor chaos webhook-demo summary clean ui-install ui-dev api-dev demo-ui
 
 validate: validate-shell validate-python validate-yaml validate-json
 	@echo "All validations passed."
@@ -69,6 +69,18 @@ clean:
 	@rm -rf incidents/INC-*
 	@rm -f incidents/experiment-summary.md incidents/experiment-summary.json
 	@echo "Cleaned incident artifacts."
+
+ui-install:
+	@cd ui && npm install
+
+ui-dev:
+	@cd ui && npm run dev
+
+api-dev:
+	@cd app && uvicorn main:app --host 0.0.0.0 --port 8080
+
+demo-ui:
+	@cd ui && VITE_API_BASE_URL=http://localhost:8080 npm run dev
 
 doctor:
 	@echo "Checking prerequisites..."

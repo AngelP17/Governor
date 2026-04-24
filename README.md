@@ -175,6 +175,71 @@ That's it! The setup script will:
 
 ## Demo Workflow
 
+### Resilience Control Plane UI
+
+Resilience Pilot UI is a local-first reliability control plane for demonstrating Kubernetes failure recovery, SLO validation, incident context capture, runbook mapping, and auditability. It converts the repo's scripts, manifests, metrics, and incident artifacts into a guided operational surface for Platform/SRE portfolio review.
+
+```bash
+# Terminal 1: API
+cd app
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8080
+
+# Terminal 2: UI
+cd ui
+npm install
+VITE_API_BASE_URL=http://localhost:8080 npm run dev
+```
+
+Open http://localhost:5173. If the backend or Kubernetes cluster is not running, the UI remains usable in clearly labeled Demo Data mode.
+
+### UI Screenshots
+
+#### Command Center
+The primary operational surface showing platform health, SLO status, incident lifecycle, and topology.
+![Command Center](ui/docs/ui-screenshots/01-command-center.png)
+
+#### Incident Replay
+Step-by-step replay of a pod failure with controlled progression through detection, recovery, and validation.
+![Incident Replay](ui/docs/ui-screenshots/02-replay.png)
+
+#### Incident Review
+Tabular view of all incident artifacts with severity, duration, SLO outcome, and linked runbooks.
+![Incidents](ui/docs/ui-screenshots/03-incidents.png)
+
+#### Incident Detail
+Full incident review with detection context, snapshot data, recovery path, SLO validation, and audit trail.
+![Incident Detail](ui/docs/ui-screenshots/04-incident-detail.png)
+
+#### Runbook Console
+Alert-to-runbook mappings with dry-run support, remediation scripts, and validation commands.
+![Runbooks](ui/docs/ui-screenshots/05-runbooks.png)
+
+#### SLO & Error Budget
+Reliability contract with availability, MTTR, error rate, and P95 latency targets and burn-rate alerts.
+![SLOs](ui/docs/ui-screenshots/06-slos.png)
+
+#### Topology & GitOps
+Architecture map showing traffic flow, metrics scraping, GitOps reconciliation, and CI/CD pipeline.
+![Topology](ui/docs/ui-screenshots/07-topology.png)
+
+#### Production Controls
+Controls mapped to repo artifacts with risk reduction explanations and known boundaries.
+![Controls](ui/docs/ui-screenshots/08-controls.png)
+
+#### Guided Walkthrough
+Five-step portfolio narrative for SRE and Platform Engineer hiring conversations.
+![Demo](ui/docs/ui-screenshots/09-demo.png)
+
+Useful UI targets:
+
+```bash
+make ui-install
+make ui-dev
+make api-dev
+make demo-ui
+```
+
 ### 1. Access the Application
 
 ```bash
