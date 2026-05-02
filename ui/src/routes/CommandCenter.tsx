@@ -1,5 +1,5 @@
-import { ArrowRight, BookOpenText, GitBranch, PlayCircle, Siren, WarningCircle } from "@phosphor-icons/react";
-import { motion } from "framer-motion";
+import { ArrowRight, BookOpenText, GitBranch, PlayCircle, Siren, WarningCircle, Clock, Lightning } from "@phosphor-icons/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LifecycleTimeline } from "../components/command-center/LifecycleTimeline";
@@ -12,21 +12,35 @@ import { StatusBadge } from "../components/shared/StatusBadge";
 import { api } from "../lib/api";
 import { demoTopology, lifecycle } from "../lib/demo-data";
 import { percent } from "../lib/format";
-import type { PlatformSummary, TopologyNode } from "../lib/types";
+import type { PlatformSummary, TopologyNode, ChaosExperiment } from "../lib/types";
 
 export function CommandCenter() {
   const [summary, setSummary] = useState<PlatformSummary>();
   const [mode, setMode] = useState<"live" | "demo">("demo");
   const [error, setError] = useState<string>();
   const [confirm, setConfirm] = useState<"degraded" | "reset" | null>(null);
+  const [chaosHistory, setChaosHistory] = useState<ChaosExperiment[]>([]);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string>();
   const navigate = useNavigate();
 
+  const fetchSummary = async () => {
+    const result = await api.summary();
+    setSummary(result.data);
+    setMode(result.mode);
+    setError(result.error);
+  };
+
+  const fetchHistory = async () => {
+    const result = await api.chaosHistory();
+    if (result.mode === "live") setChaosHistory(result.data);
+  };
+
   useEffect(() => {
-    api.summary().then((result) => {
-      setSummary(result.data);
-      setMode(result.mode);
-      setError(result.error);
-    });
+    fetchSummary();
+    fetchHistory();
+    const interval = window.setInterval(() => { fetchSummary(); fetchHistory(); }, 30000);
+    return () => window.clearInterval(interval);
   }, []);
 
   if (!summary) return <LoadingState />;
@@ -41,12 +55,17 @@ export function CommandCenter() {
   ];
 
   const runAction = async () => {
+    setActionLoading(true);
+    setActionError(undefined);
     try {
       if (confirm === "degraded") await api.triggerDegraded();
       if (confirm === "reset") await api.resetChaos();
-    } catch {
-      navigate("/replay");
+      await fetchSummary();
+      await fetchHistory();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Action failed");
     } finally {
+      setActionLoading(false);
       setConfirm(null);
     }
   };
@@ -54,6 +73,12 @@ export function CommandCenter() {
   return (
     <div className="mx-auto max-w-[1460px]">
       {error ? <div className="mb-5"><ApiOfflineState /></div> : null}
+      {actionError ? (
+        <div className="mb-5 rounded-2xl border border-rose-400/20 bg-rose-400/8 p-4">
+          <p className="text-sm font-semibold text-rose-100">Action failed</p>
+          <p className="mt-1 text-xs text-rose-100/75">{actionError}</p>
+        </div>
+      ) : null}
       <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="rounded-[1.5rem] border border-line bg-panel/85 p-6 shadow-surface md:p-8">
           <div className="flex flex-wrap items-center gap-2">
@@ -77,8 +102,8 @@ export function CommandCenter() {
           </div>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link to="/replay" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 active:scale-[0.98]"><PlayCircle size={18} weight="fill" />Run Demo Incident</Link>
-            <button disabled={mode !== "live"} onClick={() => setConfirm("degraded")} title={mode !== "live" ? "Start the FastAPI backend to enable live chaos controls." : "Trigger degraded health responses"} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-amber-300/35 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100 transition enabled:hover:border-amber-200/60 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"><WarningCircle size={18} />Trigger Degraded Mode</button>
-            <button disabled={mode !== "live"} onClick={() => setConfirm("reset")} title={mode !== "live" ? "Start the FastAPI backend to enable live reset." : "Reset API chaos mode"} className="inline-flex shrink-0 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition enabled:hover:border-slate-500 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45">Reset Chaos</button>
+            <button disabled={mode !== "live" || actionLoading} onClick={() => setConfirm("degraded")} title={mode !== "live" ? "Start the FastAPI backend to enable live chaos controls." : "Trigger degraded health responses"} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-amber-300/35 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100 transition enabled:hover:border-amber-200/60 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"><WarningCircle size={18} />Trigger Degraded Mode</button>
+            <button disabled={mode !== "live" || actionLoading} onClick={() => setConfirm("reset")} title={mode !== "live" ? "Start the FastAPI backend to enable live reset." : "Reset API chaos mode"} className="inline-flex shrink-0 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition enabled:hover:border-slate-500 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45">Reset Chaos</button>
             <Link to={`/incidents/${summary.latest_incident_id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]">View Incident Report<ArrowRight size={17} /></Link>
             <Link to="/runbooks" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]"><BookOpenText size={17} />Open Runbook</Link>
             <Link to="/topology" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]"><GitBranch size={17} />View Architecture</Link>
@@ -111,6 +136,56 @@ export function CommandCenter() {
         <TopologyMap topology={demoTopology} onSelect={(node: TopologyNode) => navigate(`/topology?node=${node.id}`)} />
         <RecentEvents />
       </section>
+
+      <section className="mt-8">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Chaos experiment log</h2>
+            <p className="mt-1 text-sm text-slate-400">Recorded triggers and resets with calculated MTTR.</p>
+          </div>
+          <StatusBadge status={chaosHistory.length > 0 ? "observing" : "pending"}>{chaosHistory.length} ENTRIES</StatusBadge>
+        </div>
+        {chaosHistory.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-panel/80 p-8">
+            <p className="text-sm text-slate-400">No chaos experiments recorded yet. Start the backend and click Trigger Degraded Mode to begin.</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-line bg-panel/80">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-left text-sm">
+                <thead className="border-b border-line text-xs uppercase tracking-[0.16em] text-slate-500">
+                  <tr>
+                    <th className="px-5 py-4">ID</th>
+                    <th className="px-5 py-4">Action</th>
+                    <th className="px-5 py-4">Note</th>
+                    <th className="px-5 py-4">MTTR</th>
+                    <th className="px-5 py-4">Outcome</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  <AnimatePresence>
+                    {chaosHistory.map((entry) => (
+                      <motion.tr key={entry.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="hover:bg-slate-900/55">
+                        <td className="px-5 py-4 font-mono text-xs text-slate-300">{entry.id}</td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${entry.action === "trigger" ? "border-amber-300/30 bg-amber-300/10 text-amber-100" : "border-emerald-300/30 bg-emerald-300/10 text-emerald-100"}`}>
+                            {entry.action === "trigger" ? <Lightning size={13} /> : <Clock size={13} />}
+                            {entry.action.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-slate-300">{entry.note}</td>
+                        <td className="px-5 py-4 font-mono text-slate-200">{entry.mttr_seconds != null ? `${entry.mttr_seconds}s` : "--"}</td>
+                        <td className="px-5 py-4"><StatusBadge status={entry.slo_met ?? true} /></td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+
       {confirm ? <ConfirmDialog title={confirm === "degraded" ? "Trigger degraded mode?" : "Reset chaos mode?"} body="This calls the local FastAPI chaos endpoint. Use this only against the local demo service, not a shared environment." confirmLabel={confirm === "degraded" ? "Trigger degraded mode" : "Reset chaos"} onCancel={() => setConfirm(null)} onConfirm={runAction} /> : null}
     </div>
   );

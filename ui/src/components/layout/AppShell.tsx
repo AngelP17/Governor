@@ -16,7 +16,7 @@ const navItems = [
 
 export function AppShell() {
   return (
-    <div className="relative min-h-[100dvh]">
+    <div className="relative min-h-[100dvh] overflow-x-hidden">
       <div className="mx-auto grid min-h-[100dvh] max-w-[1660px] grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="border-b border-line bg-graphite/80 px-4 py-4 backdrop-blur lg:sticky lg:top-0 lg:h-[100dvh] lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
           <div className="flex items-center justify-between gap-4 lg:block">

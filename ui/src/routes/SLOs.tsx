@@ -1,18 +1,43 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useState } from "react";
+import { ApiOfflineState, LoadingState } from "../components/shared/States";
 import { SectionHeader } from "../components/shared/SectionHeader";
 import { StatusBadge } from "../components/shared/StatusBadge";
+import { api } from "../lib/api";
+import { demoSLOs } from "../lib/demo-data";
 
-const slos = [
-  { name: "Availability", target: "99.5%", current: "99.982%", status: true, why: "Protects user reachability.", data: [99.8, 99.91, 99.96, 99.94, 99.982] },
-  { name: "MTTR", target: "< 30s", current: "12s", status: true, why: "Proves recovery speed after a controlled failure.", data: [22, 19, 16, 14, 12] },
-  { name: "Error Rate", target: "< 0.5%", current: "0.14%", status: true, why: "Captures correctness and failed requests.", data: [0.31, 0.26, 0.2, 0.18, 0.14] },
-  { name: "P95 Latency", target: "< 500ms", current: "184ms", status: true, why: "Captures user-facing responsiveness.", data: [240, 228, 206, 193, 184] },
-];
+interface SLOItem {
+  name: string;
+  target: string;
+  current: string;
+  status: boolean;
+  why: string;
+  data: number[];
+}
 
 export function SLOs() {
+  const [slos, setSlos] = useState<SLOItem[]>(demoSLOs);
+  const [mode, setMode] = useState<"live" | "demo">("demo");
+  const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.slos().then((result) => {
+      if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+        setSlos(result.data);
+      }
+      setMode(result.mode);
+      setError(result.error);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <LoadingState />;
+
   return (
     <div className="mx-auto max-w-[1400px]">
       <SectionHeader eyebrow="SLO and Error Budget" title="Reliability contract" description="These indicators keep the demo tied to SRE outcomes: reachability, recovery speed, correctness, and responsiveness." />
+      {error ? <div className="mb-5"><ApiOfflineState /></div> : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {slos.map((slo) => (
           <article key={slo.name} className="rounded-2xl border border-line bg-panel/80 p-5">

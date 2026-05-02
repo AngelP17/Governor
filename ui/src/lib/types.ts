@@ -99,6 +99,25 @@ export interface Control {
   why: string;
 }
 
+export interface ChaosExperiment {
+  id: string;
+  action: "trigger" | "reset";
+  label: string;
+  timestamp: string;
+  outcome: string;
+  note: string;
+  mttr_seconds: number | null;
+  slo_met: boolean | null;
+}
+
+export interface RunbookResult {
+  runbook_id: string;
+  status: string;
+  message: string;
+  command: string | null;
+  output: string | null;
+}
+
 export type ReplayPhase =
   | "baseline"
   | "chaos_injected"

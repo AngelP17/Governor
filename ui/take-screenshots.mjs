@@ -25,7 +25,7 @@ async function main() {
     await page.waitForTimeout(1500);
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/${name}.png`,
-      fullPage: false,
+      fullPage: true,
     });
     console.log(`  -> ${SCREENSHOT_DIR}/${name}.png`);
   }

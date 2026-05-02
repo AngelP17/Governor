@@ -72,6 +72,50 @@ graph TB
     style ARGO fill:#e0f2f1,stroke:#00796b
 ```
 
+### Platform API Architecture
+
+```mermaid
+graph TB
+    subgraph Frontend["React + Vite UI"]
+        CC["Command Center"]
+        RP["Incident Replay"]
+        IC["Incidents"]
+        RB["Runbooks"]
+        SL["SLOs"]
+        TP["Topology"]
+        CT["Controls"]
+    end
+
+    subgraph Backend["FastAPI Platform API"]
+        SUM["GET /platform/summary"]
+        INC["GET /platform/incidents"]
+        RUN["GET /platform/runbooks"]
+        TOP["GET /platform/topology"]
+        CTL["GET /platform/controls"]
+        EVT["GET /platform/events"]
+        SLO["GET /platform/slo"]
+        CHD["POST /platform/chaos/degraded"]
+        CHR["POST /platform/chaos/reset"]
+        CHH["GET /platform/chaos/history"]
+        RBD["POST /runbooks/{id}/dry-run"]
+        RBE["POST /runbooks/{id}/execute"]
+    end
+
+    CC --> SUM
+    CC --> CHD
+    CC --> CHR
+    CC --> CHH
+    RP --> INC
+    IC --> INC
+    RB --> RUN
+    RB --> RBD
+    RB --> RBE
+    SL --> SLO
+    TP --> TOP
+    CT --> CTL
+    CC --> EVT
+```
+
 ### Closed-Loop Incident Workflow
 
 Every chaos experiment follows an auditable six-phase lifecycle:

@@ -122,6 +122,24 @@ export const demoTopology: Topology = {
   ],
 };
 
+export const demoSLOs = [
+  { name: "Availability", target: "99.5%", current: "99.982%", status: true, why: "Protects user reachability.", data: [99.8, 99.91, 99.96, 99.94, 99.982] },
+  { name: "MTTR", target: "< 30s", current: "12s", status: true, why: "Proves recovery speed after a controlled failure.", data: [22, 19, 16, 14, 12] },
+  { name: "Error Rate", target: "< 0.5%", current: "0.14%", status: true, why: "Captures correctness and failed requests.", data: [0.31, 0.26, 0.2, 0.18, 0.14] },
+  { name: "P95 Latency", target: "< 500ms", current: "184ms", status: true, why: "Captures user-facing responsiveness.", data: [240, 228, 206, 193, 184] },
+];
+
+export const demoEvents = [
+  { time: "15:30:45Z", severity: "warning" as const, text: "Pod termination requested by chaos workflow" },
+  { time: "15:30:49Z", severity: "warning" as const, text: "Replica availability dropped to 2/3" },
+  { time: "15:30:50Z", severity: "info" as const, text: "Snapshot captured pods, events, logs, deployment state" },
+  { time: "15:30:51Z", severity: "info" as const, text: "Runbook mapped: runbooks/pod-crash.md" },
+  { time: "15:30:55Z", severity: "info" as const, text: "Deployment controller scheduled replacement pod" },
+  { time: "15:30:57Z", severity: "success" as const, text: "Readiness passed: 3/3 replicas available" },
+  { time: "15:30:58Z", severity: "success" as const, text: "MTTR validated: 12s under 30s objective" },
+  { time: "15:30:59Z", severity: "success" as const, text: "Audit report generated" },
+];
+
 export const demoControls: Control[] = [
   { category: "Runtime Safety", name: "Liveness probe", artifact: "manifests/deployment.yaml", status: "configured", risk_reduced: "Restarts failed containers automatically", why: "Detects process failure" },
   { category: "Runtime Safety", name: "Readiness probe", artifact: "manifests/deployment.yaml", status: "configured", risk_reduced: "Removes unready pods from service routing", why: "Prevents bad pods from receiving traffic" },
