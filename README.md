@@ -1,4 +1,4 @@
-# Kubernetes Reliability Platform
+# Governor: Kubernetes Reliability Platform
 
 [![DevSecOps Pipeline](https://github.com/AngelP17/k8s-resilience-pilot/actions/workflows/devsecops.yml/badge.svg)](https://github.com/AngelP17/k8s-resilience-pilot/actions/workflows/devsecops.yml)
 
