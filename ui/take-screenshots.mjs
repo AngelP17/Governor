@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 
-const BASE_URL = 'http://localhost:5173';
+const BASE_URL = process.env.SCREENSHOT_BASE_URL ?? 'http://localhost:5173';
 const SCREENSHOT_DIR = 'docs/ui-screenshots';
 
 const pages = [

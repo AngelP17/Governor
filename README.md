@@ -76,44 +76,62 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph Frontend["React + Vite UI"]
+    subgraph Frontend["React + Vite + TypeScript UI"]
         CC["Command Center"]
         RP["Incident Replay"]
         IC["Incidents"]
+        ID["Incident Detail"]
         RB["Runbooks"]
         SL["SLOs"]
         TP["Topology"]
         CT["Controls"]
+        DM["Demo"]
+    end
+
+    subgraph Shared["App-wide UX"]
+        TO["ToastProvider<br/>live feedback"]
+        EB["ErrorBoundary<br/>graceful failure"]
     end
 
     subgraph Backend["FastAPI Platform API"]
         SUM["GET /platform/summary"]
         INC["GET /platform/incidents"]
+        IDT["GET /platform/incidents/{id}"]
         RUN["GET /platform/runbooks"]
+        RH1["GET /platform/runbooks/history"]
+        RH2["GET /platform/runbooks/{id}/history"]
         TOP["GET /platform/topology"]
         CTL["GET /platform/controls"]
         EVT["GET /platform/events"]
         SLO["GET /platform/slo"]
+        SLOH["GET /platform/slo/history?range=1h|24h|7d"]
         CHD["POST /platform/chaos/degraded"]
         CHR["POST /platform/chaos/reset"]
         CHH["GET /platform/chaos/history"]
         RBD["POST /runbooks/{id}/dry-run"]
         RBE["POST /runbooks/{id}/execute"]
+        PM["POST /platform/postmortem"]
     end
 
+    Frontend --> Shared
     CC --> SUM
     CC --> CHD
     CC --> CHR
     CC --> CHH
+    CC --> EVT
     RP --> INC
     IC --> INC
+    IC --> IDT
+    ID --> IDT
+    ID --> PM
     RB --> RUN
+    RB --> RH2
     RB --> RBD
     RB --> RBE
     SL --> SLO
+    SL --> SLOH
     TP --> TOP
     CT --> CTL
-    CC --> EVT
 ```
 
 ### Closed-Loop Incident Workflow
@@ -161,6 +179,23 @@ See [Operational Feedback Loop](docs/operational-feedback-loop.md) for the full 
 
 ---
 
+## Control Plane UX Features
+
+The React control plane is not a static dashboard. Every primary action calls a real backend endpoint and surfaces feedback through a unified toast layer. An `ErrorBoundary` wraps the router so a render-time crash never produces a blank tab.
+
+| Feature | Endpoint | Behavior |
+|---------|----------|----------|
+| Toast notifications | n/a (UI) | Success, info, warning, and error variants appear for chaos actions, runbook runs, copy, and postmortem generation. |
+| Runbook execution history | `GET /platform/runbooks/{id}/history` | Last 8 runs per runbook with action, status, duration, exit code, actor, timestamp, and output excerpt. |
+| SLO time-series | `GET /platform/slo/history?range=1h|24h|7d` | Availability, MTTR, error rate, and P95 latency trend charts with time-range selector. |
+| Postmortem generator | `POST /platform/postmortem` | Auto-drafts a complete markdown postmortem (summary, detection, timeline, impact, root cause, what went well, what to improve, artifacts) with one-click copy and download. |
+| Error boundary | n/a (UI) | Catches render-time exceptions and offers reload or in-place recovery without nuking the rest of the app. |
+| CORS regex | n/a (FastAPI) | Allows any localhost or 127.0.0.1 origin on any port so dev ports are not hardcoded. |
+
+The UI never blocks on the backend. If the FastAPI service is offline, every route continues to render against a typed `demo-data.ts` fallback and the trend window badges itself as `DEMO`. This keeps the demo credible both with and without a live cluster.
+
+---
+
 ## Production Controls
 
 | Control | Artifact | Purpose |
@@ -177,6 +212,20 @@ Alerting includes both threshold-based rules and burn-rate-style rules so the re
 ---
 
 ## Quick Start
+
+### Fastest Portfolio Demo
+
+Use this path when you want to review the control-plane UI without provisioning Kubernetes:
+
+```bash
+# Terminal 1: API
+make api-dev
+
+# Terminal 2: UI
+make demo-ui
+```
+
+Open http://localhost:5173. The UI also works without the API by switching to a visible Demo Data state.
 
 ### Prerequisites
 
@@ -275,12 +324,18 @@ Controls mapped to repo artifacts with risk reduction explanations and known bou
 Five-step portfolio narrative for SRE and Platform Engineer hiring conversations.
 ![Demo](ui/docs/ui-screenshots/09-demo.png)
 
+#### Postmortem Generator
+One-click draft postmortem from any incident detail page, with copy and download as `.md`.
+![Postmortem](ui/docs/ui-screenshots/10-postmortem-modal.png)
+
 Useful UI targets:
 
 ```bash
 make ui-install
 make ui-dev
+make ui-build
 make api-dev
+make api-smoke
 make demo-ui
 ```
 
@@ -522,11 +577,30 @@ See [Remediation Contract](docs/remediation-contract.md) for the full safety mod
 | `make validate-k8s` | Validate Kubernetes manifests with kubeconform |
 | `make validate-policy` | Validate manifests against OPA policies with conftest |
 | `make validate-summary` | Test summary script on sample data |
+| `make api-smoke` | Check local FastAPI health and platform API contract |
 | `make doctor` | Check all prerequisites are installed |
 | `make chaos` | Run chaos monkey |
 | `make webhook-demo` | Start webhook receiver on :9095 |
 | `make summary` | Generate experiment summary |
+| `make ui-build` | Type-check and build the React/Vite UI |
 | `make clean` | Remove generated incident artifacts |
+
+## Verification Matrix
+
+Run the subset that matches the change:
+
+| Area | Command |
+|------|---------|
+| Repo scripts and data formats | `make validate` |
+| Incident summary generator | `make validate-summary` |
+| Kubernetes manifests | `make validate-k8s` |
+| OPA policy checks | `make validate-policy` |
+| Backend syntax | `cd app && python3 -m py_compile main.py platform_api.py` |
+| Backend contract smoke test | `make api-dev` in one terminal, then `make api-smoke` in another |
+| UI typecheck and production build | `make ui-build` |
+| Live UI demo | `make api-dev` and `make demo-ui`, then open http://localhost:5173 |
+
+`make validate-k8s` skips when `kubeconform` is missing. `make validate-policy` skips when `conftest` is missing.
 
 ## Known Boundaries
 

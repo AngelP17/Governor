@@ -1,10 +1,12 @@
-import { FileText, ShieldCheck, Play, Lightning, CheckCircle, WarningCircle } from "@phosphor-icons/react";
+import { FileText, ShieldCheck, Play, Lightning, CheckCircle, WarningCircle, Clock, TerminalWindow } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { CopyButton } from "../components/shared/CopyButton";
 import { LoadingState } from "../components/shared/States";
 import { SectionHeader } from "../components/shared/SectionHeader";
 import { StatusBadge } from "../components/shared/StatusBadge";
+import { useToast } from "../components/shared/Toast";
 import { api } from "../lib/api";
+import { formatDateTime, formatSeconds } from "../lib/format";
 import type { Runbook, RunbookResult } from "../lib/types";
 
 const commandFor = (runbook: Runbook) => {
@@ -14,12 +16,33 @@ const commandFor = (runbook: Runbook) => {
   return "kubectl get pods -n kube-system -l k8s-app=kube-dns";
 };
 
+interface RunbookHistoryEntry {
+  id: string;
+  runbook_id: string;
+  runbook_title: string;
+  action: "dry-run" | "execute";
+  status: string;
+  command: string | null;
+  started_at: string;
+  duration_ms: number;
+  exit_code: number;
+  actor: string;
+  output_excerpt: string | null;
+}
+
 export function Runbooks() {
   const [runbooks, setRunbooks] = useState<Runbook[]>();
   const [selected, setSelected] = useState<Runbook>();
   const [result, setResult] = useState<RunbookResult>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [history, setHistory] = useState<RunbookHistoryEntry[]>([]);
+  const { push } = useToast();
+
+  const refreshHistory = async () => {
+    const res = await api.runbookHistory(selected?.id);
+    setHistory(res.data);
+  };
 
   useEffect(() => {
     api.runbooks().then((res) => {
@@ -27,6 +50,12 @@ export function Runbooks() {
       setSelected(res.data[0]);
     });
   }, []);
+
+  useEffect(() => {
+    if (selected) {
+      api.runbookHistory(selected.id).then((res) => setHistory(res.data));
+    }
+  }, [selected]);
 
   const runDryRun = async () => {
     if (!selected) return;
@@ -36,8 +65,12 @@ export function Runbooks() {
     try {
       const res = await api.runbookDryRun(selected.id);
       setResult(res);
+      push({ title: "Dry run completed", description: res.message, variant: "info" });
+      await refreshHistory();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Dry-run failed");
+      const message = e instanceof Error ? e.message : "Dry-run failed";
+      setError(message);
+      push({ title: "Dry run failed", description: message, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -51,8 +84,13 @@ export function Runbooks() {
     try {
       const res = await api.runbookExecute(selected.id);
       setResult(res);
+      const variant = res.status === "executed" ? "success" : res.status === "manual_required" ? "warning" : "info";
+      push({ title: `${selected.title} executed`, description: res.message, variant });
+      await refreshHistory();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Execution failed");
+      const message = e instanceof Error ? e.message : "Execution failed";
+      setError(message);
+      push({ title: "Execution failed", description: message, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -131,6 +169,63 @@ export function Runbooks() {
           ) : null}
         </article>
       </div>
+
+      <section className="mt-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-xl font-semibold text-white"><TerminalWindow size={20} className="text-sky-200" />Execution history</h2>
+            <p className="mt-1 text-sm text-slate-400">Last 8 runs for this runbook. Includes who triggered it, duration, exit code, and output excerpt.</p>
+          </div>
+          <span className="rounded-full border border-line bg-slate-950/45 px-3 py-1 font-mono text-xs text-slate-300">{history.length} ENTRIES</span>
+        </div>
+        {history.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-panel/80 p-8 text-sm text-slate-400">
+            No runs recorded for this runbook yet. Trigger a Dry Run or Execute to populate the audit trail.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-line bg-panel/80">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-left text-sm">
+                <thead className="border-b border-line text-xs uppercase tracking-[0.16em] text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Action</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Duration</th>
+                    <th className="px-4 py-3">Exit</th>
+                    <th className="px-4 py-3">Actor</th>
+                    <th className="px-4 py-3">When</th>
+                    <th className="px-4 py-3">Output</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {history.map((entry) => (
+                    <tr key={entry.id} className="hover:bg-slate-900/55">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-300">{entry.id}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${entry.action === "execute" ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100" : "border-sky-300/30 bg-sky-300/10 text-sky-100"}`}>
+                          {entry.action === "execute" ? <Lightning size={12} weight="fill" /> : <Play size={12} />}
+                          {entry.action.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-300">{entry.status}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-200"><Clock size={12} className="mr-1 inline" />{formatSeconds(Math.max(1, Math.round(entry.duration_ms / 1000)))}</td>
+                      <td className="px-4 py-3 font-mono text-xs">
+                        <span className={entry.exit_code === 0 ? "text-emerald-200" : "text-rose-200"}>{entry.exit_code === 0 ? "0" : entry.exit_code}</span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-300">{entry.actor}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">{formatDateTime(entry.started_at)}</td>
+                      <td className="px-4 py-3 max-w-[260px] truncate font-mono text-xs text-slate-400" title={entry.output_excerpt ?? ""}>
+                        {entry.output_excerpt ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

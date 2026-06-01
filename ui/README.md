@@ -41,6 +41,26 @@ VITE_API_BASE_URL=http://localhost:8080 npm run dev
 
 The UI attempts live calls to `http://localhost:8080/platform/*`. If those calls fail, it automatically shows realistic demo data with a visible Demo Data state.
 
+## Build and verify
+
+```bash
+cd ui
+npm run build
+```
+
+From the repo root, the same build is available as:
+
+```bash
+make ui-build
+```
+
+For a live API smoke check, start the backend and run:
+
+```bash
+make api-dev
+make api-smoke
+```
+
 ## Demo mode
 
 Demo mode works without a running Kubernetes cluster. It models:
@@ -69,4 +89,17 @@ make summary
 
 ## Interpreting the command center
 
-The first screen answers five questions: is the platform healthy, what failed, what was the impact, what recovered it, and whether the SLO was met. It complements Grafana by showing operational workflow and audit narrative rather than rebuilding metric dashboards.
+The first screen answers five reviewer questions: is the platform healthy, what failed, what evidence exists, what recovered it, and whether the SLO was met. It complements Grafana by showing operational workflow and audit narrative rather than rebuilding metric dashboards.
+
+## Screenshot refresh
+
+Screenshots referenced by the root README live in `ui/docs/ui-screenshots/`.
+
+To refresh them, start the UI at http://localhost:5173 and run:
+
+```bash
+cd ui
+node take-screenshots.mjs
+```
+
+Only refresh screenshots after visible UI changes. If Playwright or a browser runtime is unavailable, leave the existing screenshots in place and document the blocker.

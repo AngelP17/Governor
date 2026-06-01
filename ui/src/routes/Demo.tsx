@@ -1,4 +1,5 @@
 import { CaretRight } from "@phosphor-icons/react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { SectionHeader } from "../components/shared/SectionHeader";
@@ -13,11 +14,12 @@ const steps = [
 ] as const;
 
 export function Demo() {
+  const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
   const step = steps[index];
   return (
     <div className="mx-auto max-w-[1200px]">
-      <SectionHeader eyebrow="Guided Walkthrough" title="Portfolio review mode" description="A five-step explanation designed for SRE, Platform, and Infrastructure hiring conversations." action={<StatusBadge status="observing">STEP {index + 1}/5</StatusBadge>} />
+      <SectionHeader title="Portfolio review mode" description="A five-part walkthrough for SRE, Platform, and Infrastructure hiring conversations." action={<StatusBadge status="observing">STEP {index + 1}/5</StatusBadge>} />
       <div className="rounded-[1.5rem] border border-line bg-panel/82 p-6 md:p-8">
         <div className="grid gap-8 md:grid-cols-[0.7fr_1.3fr]">
           <div className="space-y-3">
@@ -27,8 +29,14 @@ export function Demo() {
               </button>
             ))}
           </div>
-          <div className="min-w-0">
-            <p className="font-mono text-xs text-slate-500">PORTFOLIO NARRATIVE</p>
+          <motion.div
+            key={step[0]}
+            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="min-w-0"
+          >
+            <p className="font-mono text-xs text-slate-500">Reviewer path</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">{step[0]}</h1>
             <p className="mt-5 text-base leading-7 text-slate-300 md:text-lg md:leading-8">{step[1]}</p>
             <details className="mt-6 rounded-2xl border border-line bg-slate-950/45 p-5">
@@ -40,7 +48,7 @@ export function Demo() {
               <Link to="/replay" className="shrink-0 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]">Open replay</Link>
               <Link to="/controls" className="shrink-0 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]">Production controls</Link>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

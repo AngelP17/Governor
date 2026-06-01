@@ -1,4 +1,4 @@
-export type Status = "healthy" | "degraded" | "recovering" | "recovered" | "slo_breached" | "met" | "breached" | "synced" | "passing" | "configured" | "blocked" | "observing" | "reconciling" | "pending" | "documented gap";
+export type Status = "healthy" | "degraded" | "recovering" | "recovered" | "slo_breached" | "met" | "breached" | "synced" | "passing" | "configured" | "enforced" | "blocked" | "observing" | "reconciling" | "pending" | "documented gap";
 
 export type DataMode = "live" | "demo" | "generated";
 
@@ -116,6 +116,42 @@ export interface RunbookResult {
   message: string;
   command: string | null;
   output: string | null;
+}
+
+export interface RunbookHistoryEntry {
+  id: string;
+  runbook_id: string;
+  runbook_title: string;
+  action: "dry-run" | "execute";
+  status: string;
+  command: string | null;
+  started_at: string;
+  duration_ms: number;
+  exit_code: number;
+  actor: string;
+  output_excerpt: string | null;
+}
+
+export type TimeRange = "1h" | "24h" | "7d";
+
+export interface SLOTimePoint {
+  bucket: string;
+  availability: number;
+  mttr_seconds: number;
+  error_rate: number;
+  p95_latency_ms: number;
+}
+
+export interface SLOTimeSeries {
+  range: TimeRange;
+  points: SLOTimePoint[];
+  mttr_history: Array<{ bucket: string; duration_seconds: number; incident_id: string | null }>;
+}
+
+export interface Postmortem {
+  incident_id: string;
+  generated_at: string;
+  markdown: string;
 }
 
 export type ReplayPhase =

@@ -1,20 +1,50 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { FileText, X, DownloadSimple, Copy, FileArrowDown } from "@phosphor-icons/react";
 import { LifecycleTimeline } from "../components/command-center/LifecycleTimeline";
 import { CopyButton } from "../components/shared/CopyButton";
 import { LoadingState } from "../components/shared/States";
 import { StatusBadge } from "../components/shared/StatusBadge";
+import { useToast } from "../components/shared/Toast";
 import { api } from "../lib/api";
 import { formatDateTime, formatSeconds } from "../lib/format";
-import type { IncidentDetail } from "../lib/types";
+import type { IncidentDetail, Postmortem } from "../lib/types";
 
 export function IncidentDetailPage() {
   const { id = "INC-20260422153045" } = useParams();
   const [incident, setIncident] = useState<IncidentDetail>();
+  const [postmortem, setPostmortem] = useState<Postmortem | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const { push } = useToast();
 
   useEffect(() => {
     api.incident(id).then((result) => setIncident(result.data));
   }, [id]);
+
+  const generatePostmortem = async () => {
+    setGenerating(true);
+    try {
+      const res = await api.postmortem(id);
+      setPostmortem(res);
+      push({ title: "Postmortem draft generated", description: `Preview ready for ${id}. Copy or download below.`, variant: "success" });
+    } catch (e) {
+      push({ title: "Postmortem generation failed", description: e instanceof Error ? e.message : "Unknown error", variant: "error" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const downloadPostmortem = () => {
+    if (!postmortem) return;
+    const blob = new Blob([postmortem.markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${postmortem.incident_id}-postmortem.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    push({ title: "Downloaded", description: `${postmortem.incident_id}-postmortem.md`, variant: "success" });
+  };
 
   if (!incident) return <LoadingState />;
 
@@ -44,6 +74,18 @@ export function IncidentDetailPage() {
           {[["Service", incident.service], ["Namespace", incident.namespace], ["Started", formatDateTime(incident.started_at)], ["Duration", formatSeconds(incident.duration_seconds)]].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-line bg-slate-950/45 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</p><p className="mt-2 break-all font-mono text-sm text-white">{value}</p></div>
           ))}
+        </div>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={generatePostmortem}
+            disabled={generating}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-sky-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-sky-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileArrowDown size={16} weight="bold" />
+            {generating ? "Generating postmortem..." : "Generate postmortem"}
+          </button>
+          <Link to="/runbooks" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]">Open runbooks</Link>
         </div>
       </section>
       <section className="mt-6"><LifecycleTimeline phases={incident.timeline} /></section>
@@ -84,6 +126,49 @@ export function IncidentDetailPage() {
           </div>
         </article>
       </section>
+
+      {postmortem ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/80 p-4 backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="postmortem-title">
+          <div className="relative max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-line bg-panel shadow-surface">
+            <div className="flex items-center justify-between gap-3 border-b border-line bg-slate-950/45 px-5 py-3">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-sky-200" />
+                <h3 id="postmortem-title" className="text-sm font-semibold text-white">Postmortem draft for {postmortem.incident_id}</h3>
+                <StatusBadge status="observing">DRAFT</StatusBadge>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPostmortem(null)}
+                aria-label="Close postmortem preview"
+                className="rounded-md p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white"
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-b border-line bg-slate-950/30 px-5 py-2.5">
+              <span className="text-xs text-slate-500">Generated {formatDateTime(postmortem.generated_at)}</span>
+              <div className="ml-auto flex flex-wrap gap-2">
+                <CopyButton value={postmortem.markdown} label="Copy markdown" />
+                <button
+                  type="button"
+                  onClick={downloadPostmortem}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-sky-400/40 hover:text-white active:scale-[0.98]"
+                >
+                  <DownloadSimple size={15} />Download .md
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPostmortem(null)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 active:scale-[0.98]"
+                >
+                  <Copy size={15} />Close
+                </button>
+              </div>
+            </div>
+            <pre className="max-h-[65vh] overflow-auto px-5 py-4 font-mono text-xs leading-6 text-slate-200">{postmortem.markdown}</pre>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

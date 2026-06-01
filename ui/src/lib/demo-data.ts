@@ -1,4 +1,4 @@
-import type { Control, Incident, IncidentDetail, PlatformSummary, ReplayPhase, Runbook, TimelineEvent, Topology } from "./types";
+import type { Control, Incident, IncidentDetail, PlatformSummary, Postmortem, ReplayPhase, Runbook, RunbookHistoryEntry, SLOTimeSeries, TimeRange, TimelineEvent, Topology } from "./types";
 
 export const lifecycle: TimelineEvent[] = [
   { phase: "detect", label: "Prometheus alert fired", timestamp: "T+04s", detail: "Replica availability dropped below desired state and mapped to a runbook." },
@@ -172,3 +172,124 @@ export const replayPhases: Array<{ key: ReplayPhase; label: string; event: strin
   { key: "validated", label: "SLO validated", event: "SLO validated: MTTR target met", status: "SLO Met", replicas: "3/3", mttr: "12s" },
   { key: "audited", label: "Audit report generated", event: "Audit report generated", status: "Audited", replicas: "3/3", mttr: "12s" },
 ];
+
+const timeBuckets = (range: TimeRange): string[] => {
+  if (range === "1h") {
+    return Array.from({ length: 12 }, (_, i) => {
+      const minutesAgo = (11 - i) * 5;
+      return `T-${minutesAgo.toString().padStart(2, "0")}m`;
+    });
+  }
+  if (range === "24h") {
+    return Array.from({ length: 24 }, (_, i) => `${(23 - i).toString().padStart(2, "0")}h`);
+  }
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+};
+
+const trendCurve = (range: TimeRange, target: number, current: number, jitter: number, decimals: number): number[] => {
+  const buckets = timeBuckets(range);
+  const slope = (current - target) / Math.max(1, buckets.length - 1);
+  return buckets.map((_, i) => {
+    const baseline = target + slope * i;
+    const wave = Math.sin(i / 1.4) * jitter * 0.4;
+    const noise = ((i * 37 + 11) % 17) / 17 - 0.5;
+    return Number((baseline + wave + noise * jitter * 0.6).toFixed(decimals));
+  });
+};
+
+export const demoSLOTimeSeries = (range: TimeRange): SLOTimeSeries => {
+  const buckets = timeBuckets(range);
+  const availability = trendCurve(range, 99.94, 99.982, 0.04, 3);
+  const errorRate = trendCurve(range, 0.18, 0.14, 0.06, 3);
+  const p95 = trendCurve(range, 198, 184, 14, 0);
+  const mttr = trendCurve(range, 22, 12, 4, 1);
+  return {
+    range,
+    points: buckets.map((bucket, i) => ({
+      bucket,
+      availability: availability[i],
+      mttr_seconds: mttr[i],
+      error_rate: errorRate[i],
+      p95_latency_ms: p95[i],
+    })),
+    mttr_history: mttr.map((duration, i) => ({
+      bucket: buckets[i],
+      duration_seconds: duration,
+      incident_id: i % 4 === 2 ? `INC-DEMO-${(1000 + i).toString()}` : null,
+    })),
+  };
+};
+
+const sampleRunbookExecutions: RunbookHistoryEntry[] = [
+  { id: "RB-2026-04-22-001", runbook_id: "pod-crash", runbook_title: "Pod Crash Recovery", action: "execute", status: "executed", command: "scripts/remediate_pod_crash.sh incidents/INC-20260422153045", started_at: "2026-04-22T15:30:45Z", duration_ms: 12400, exit_code: 0, actor: "on-call-demo", output_excerpt: "Pods checked: 3/3 ready" },
+  { id: "RB-2026-04-22-002", runbook_id: "pod-crash", runbook_title: "Pod Crash Recovery", action: "dry-run", status: "dry_run_simulated", command: "DRY_RUN=true scripts/remediate_pod_crash.sh incidents/INC-20260422153045", started_at: "2026-04-22T15:28:11Z", duration_ms: 480, exit_code: 0, actor: "demo-operator", output_excerpt: "No changes applied." },
+  { id: "RB-2026-04-21-001", runbook_id: "pod-crash", runbook_title: "Pod Crash Recovery", action: "execute", status: "executed", command: "scripts/remediate_pod_crash.sh incidents/INC-20260421101722", started_at: "2026-04-21T10:17:22Z", duration_ms: 21000, exit_code: 0, actor: "on-call-demo", output_excerpt: "MTTR 21s under 30s objective" },
+  { id: "RB-2026-04-20-002", runbook_id: "deployment-rollback", runbook_title: "Deployment Rollback", action: "execute", status: "executed", command: "scripts/remediate_deployment_rollback.sh incidents/INC-20260420190911", started_at: "2026-04-20T19:09:11Z", duration_ms: 28000, exit_code: 0, actor: "release-bot", output_excerpt: "Rollback to revision 7" },
+  { id: "RB-2026-04-19-001", runbook_id: "high-latency", runbook_title: "High Latency", action: "execute", status: "executed", command: "scripts/remediate_high_latency.sh incidents/INC-20260419081230", started_at: "2026-04-19T08:12:30Z", duration_ms: 18500, exit_code: 0, actor: "sre-demo", output_excerpt: "Connection pool reset" },
+  { id: "RB-2026-04-18-001", runbook_id: "pod-crash", runbook_title: "Pod Crash Recovery", action: "dry-run", status: "dry_run_simulated", command: "DRY_RUN=true scripts/remediate_pod_crash.sh incidents/INC-20260418164405", started_at: "2026-04-18T16:44:05Z", duration_ms: 510, exit_code: 0, actor: "demo-operator", output_excerpt: "Would execute: check pods" },
+  { id: "RB-2026-04-17-001", runbook_id: "pod-crash", runbook_title: "Pod Crash Recovery", action: "execute", status: "executed", command: "scripts/remediate_pod_crash.sh incidents/INC-20260417091245", started_at: "2026-04-17T09:12:45Z", duration_ms: 14200, exit_code: 0, actor: "on-call-demo", output_excerpt: "Pods checked: 3/3 ready" },
+  { id: "RB-2026-04-16-001", runbook_id: "dns-failure", runbook_title: "DNS Failure", action: "execute", status: "manual_required", command: null, started_at: "2026-04-16T11:01:08Z", duration_ms: 800, exit_code: 1, actor: "sre-demo", output_excerpt: "This runbook requires manual steps." },
+];
+
+export const demoRunbookHistory = (runbookId: string): RunbookHistoryEntry[] => {
+  if (runbookId === "all") return sampleRunbookExecutions;
+  return sampleRunbookExecutions.filter((entry) => entry.runbook_id === runbookId);
+};
+
+export const demoPostmortem = (incidentId: string): Postmortem => {
+  const markdown = `# Postmortem: ${incidentId}
+
+## Summary
+Pod failure was injected against the FastAPI deployment in the default namespace. The Kubernetes Deployment controller scheduled a replacement pod and readiness returned to 3/3 within 12 seconds, meeting the 30 second MTTR objective.
+
+## Detection
+- Source: PrometheusRule
+- Condition: Available replicas below desired count
+- Metric: kube_deployment_status_replicas_available
+- Threshold: available replicas < desired replicas
+- Actual: 2/3 replicas available
+
+## Timeline
+| Phase | Time | Detail |
+| --- | --- | --- |
+| detect | T+04s | Prometheus alert fired |
+| snapshot | T+05s | Cluster context captured |
+| runbook | T+06s | runbooks/pod-crash.md selected |
+| recover | T+10s | Replica restored |
+| validate | T+12s | SLO validated |
+| audit | T+13s | Report generated |
+
+## Impact
+- Availability: 99.982 percent, target 99.5 percent
+- MTTR: 12 seconds, target under 30 seconds
+- Error rate: 0.14 percent, target under 0.5 percent
+- P95 latency: 184 ms, target under 500 ms
+
+## Root cause
+The chaos workflow terminated one FastAPI pod. The Deployment controller detected the unavailable replica and scheduled a replacement. No application bug was involved.
+
+## What went well
+- The replica gap was detected within 4 seconds.
+- The pre-recovery snapshot preserved cluster context for postmortem.
+- The runbook mapping automatically selected the correct operating procedure.
+
+## What we will improve
+- Activate metrics-server so the HPA can react to CPU pressure.
+- Add an Alertmanager webhook with local TLS for handoff workflows.
+- Capture a one-page decision record alongside the existing artifacts.
+
+## Artifacts
+- incidents/${incidentId}/snapshot-pre
+- incidents/${incidentId}/result.json
+- incidents/${incidentId}/report.md
+- incidents/${incidentId}/remediation.log
+- incidents/${incidentId}/remediation-decision.json
+
+_Generated automatically by the Resilience Pilot control plane. Edit before publishing._
+`;
+  return {
+    incident_id: incidentId,
+    generated_at: "2026-04-22T15:31:00Z",
+    markdown,
+  };
+};

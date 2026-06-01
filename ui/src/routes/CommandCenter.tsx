@@ -1,5 +1,5 @@
 import { ArrowRight, BookOpenText, GitBranch, PlayCircle, Siren, WarningCircle, Clock, Lightning } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LifecycleTimeline } from "../components/command-center/LifecycleTimeline";
@@ -9,12 +9,14 @@ import { TopologyMap } from "../components/topology/TopologyMap";
 import { ConfirmDialog } from "../components/shared/ConfirmDialog";
 import { ApiOfflineState, LoadingState } from "../components/shared/States";
 import { StatusBadge } from "../components/shared/StatusBadge";
+import { useToast } from "../components/shared/Toast";
 import { api } from "../lib/api";
 import { demoTopology, lifecycle } from "../lib/demo-data";
 import { percent } from "../lib/format";
 import type { PlatformSummary, TopologyNode, ChaosExperiment } from "../lib/types";
 
 export function CommandCenter() {
+  const reduceMotion = useReducedMotion();
   const [summary, setSummary] = useState<PlatformSummary>();
   const [mode, setMode] = useState<"live" | "demo">("demo");
   const [error, setError] = useState<string>();
@@ -23,6 +25,7 @@ export function CommandCenter() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string>();
   const navigate = useNavigate();
+  const { push } = useToast();
 
   const fetchSummary = async () => {
     const result = await api.summary();
@@ -54,16 +57,35 @@ export function CommandCenter() {
     { title: "Policy Gates", value: `${summary.policy.controls_configured}`, target: "configured controls", status: summary.policy.status, description: "Runtime, policy, delivery, and observability controls are mapped to repo artifacts.", trend: [7, 8, 10, 11, summary.policy.controls_configured] },
   ];
 
+  const reviewPath = [
+    { label: "Evidence", value: summary.latest_incident_id, detail: "Incident artifacts and audit trail" },
+    { label: "Recovery", value: `${summary.slo.mttr.current_seconds}s`, detail: `MTTR objective: < ${summary.slo.mttr.target_seconds}s` },
+    { label: "Controls", value: `${summary.policy.controls_configured}`, detail: "Mapped runtime and delivery safeguards" },
+  ];
+
   const runAction = async () => {
     setActionLoading(true);
     setActionError(undefined);
     try {
-      if (confirm === "degraded") await api.triggerDegraded();
-      if (confirm === "reset") await api.resetChaos();
+      if (confirm === "degraded") {
+        const res = await api.triggerDegraded();
+        push({ title: "Chaos mode enabled", description: res.message, variant: "warning" });
+      }
+      if (confirm === "reset") {
+        const res = await api.resetChaos();
+        const variant = res.slo_met === false ? "error" : "success";
+        push({
+          title: res.slo_met === false ? "Service recovered (SLO breached)" : "Service recovered",
+          description: res.mttr_seconds != null ? `MTTR ${res.mttr_seconds}s against 30s objective` : res.message,
+          variant,
+        });
+      }
       await fetchSummary();
       await fetchHistory();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Action failed");
+      const message = e instanceof Error ? e.message : "Action failed";
+      setActionError(message);
+      push({ title: "Action failed", description: message, variant: "error" });
     } finally {
       setActionLoading(false);
       setConfirm(null);
@@ -79,44 +101,55 @@ export function CommandCenter() {
           <p className="mt-1 text-xs text-rose-100/75">{actionError}</p>
         </div>
       ) : null}
-      <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+      <motion.section
+        initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"
+      >
         <div className="rounded-[1.5rem] border border-line bg-panel/85 p-6 shadow-surface md:p-8">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={mode === "live" ? "healthy" : "observing"}>{mode === "live" ? "LIVE CLUSTER" : "DEMO DATA"}</StatusBadge>
             <StatusBadge status={summary.status}>{summary.status === "healthy" ? "HEALTHY" : "RECOVERED"}</StatusBadge>
             <StatusBadge status={summary.slo.mttr.status === "met"} />
           </div>
-          <div className="mt-9 grid gap-8 md:grid-cols-[1.3fr_0.7fr]">
+          <div className="mt-9 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="min-w-0">
               <h1 className="text-3xl font-semibold leading-[1.05] tracking-tight text-white md:text-5xl lg:text-6xl">Resilience Pilot</h1>
               <p className="mt-4 text-lg font-medium text-slate-200 md:text-xl">Kubernetes Reliability Control Plane</p>
-              <p className="mt-5 max-w-[74ch] text-base leading-7 text-slate-400">
-                Failure injection, SLO validation, incident context capture, and runbook-driven recovery for local Kubernetes environments.
+              <p className="mt-5 max-w-[66ch] text-base leading-7 text-slate-400">
+                A local platform demo that proves detection, recovery, SLO validation, and auditability from one operational surface.
               </p>
             </div>
-            <div className="rounded-2xl border border-line bg-slate-950/45 p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Latest incident</p>
-              <p className="mt-3 break-all font-mono text-lg font-semibold text-white">{summary.latest_incident_id}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-400">Detect, snapshot, recover, validate, and preserve the recovery as an auditable artifact set.</p>
+            <div className="grid gap-3">
+              {reviewPath.map((item) => (
+                <div key={item.label} className="rounded-2xl border border-line bg-slate-950/45 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-sm font-medium text-slate-300">{item.label}</p>
+                    <p className="break-all text-right font-mono text-sm font-semibold text-white">{item.value}</p>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+                </div>
+              ))}
             </div>
           </div>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link to="/replay" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 active:scale-[0.98]"><PlayCircle size={18} weight="fill" />Run Demo Incident</Link>
+            <Link to="/replay" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200 active:scale-[0.98]"><PlayCircle size={18} weight="fill" />Run Replay</Link>
             <button disabled={mode !== "live" || actionLoading} onClick={() => setConfirm("degraded")} title={mode !== "live" ? "Start the FastAPI backend to enable live chaos controls." : "Trigger degraded health responses"} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-amber-300/35 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100 transition enabled:hover:border-amber-200/60 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"><WarningCircle size={18} />Trigger Degraded Mode</button>
             <button disabled={mode !== "live" || actionLoading} onClick={() => setConfirm("reset")} title={mode !== "live" ? "Start the FastAPI backend to enable live reset." : "Reset API chaos mode"} className="inline-flex shrink-0 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition enabled:hover:border-slate-500 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45">Reset Chaos</button>
-            <Link to={`/incidents/${summary.latest_incident_id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]">View Incident Report<ArrowRight size={17} /></Link>
-            <Link to="/runbooks" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]"><BookOpenText size={17} />Open Runbook</Link>
+            <Link to={`/incidents/${summary.latest_incident_id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]">Review Incident<ArrowRight size={17} /></Link>
+            <Link to="/runbooks" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]"><BookOpenText size={17} />Open Runbooks</Link>
             <Link to="/topology" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 active:scale-[0.98]"><GitBranch size={17} />View Architecture</Link>
           </div>
         </div>
         <div className="grid gap-5">
           <div className="rounded-2xl border border-line bg-panel/80 p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Deployment state</p>
+            <p className="text-sm font-medium text-slate-300">Deployment state</p>
             <p className="mt-4 font-mono text-4xl font-semibold text-white">{summary.replicas.ready}/{summary.replicas.desired}</p>
             <p className="mt-3 text-sm text-slate-400">FastAPI replicas ready in namespace <span className="font-mono text-slate-200">{summary.namespace}</span>.</p>
           </div>
           <div className="rounded-2xl border border-line bg-panel/80 p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Delivery and controls</p>
+            <p className="text-sm font-medium text-slate-300">Delivery and controls</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <StatusBadge status={summary.gitops.status}>ARGOCD {String(summary.gitops.status).toUpperCase()}</StatusBadge>
               <StatusBadge status={summary.policy.status}>POLICY {String(summary.policy.status).toUpperCase()}</StatusBadge>

@@ -5,12 +5,14 @@ import { AppShell } from "./components/layout/AppShell";
 import { CommandCenter } from "./routes/CommandCenter";
 import { Controls } from "./routes/Controls";
 import { Demo } from "./routes/Demo";
+import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 import { IncidentDetailPage } from "./routes/IncidentDetail";
 import { Incidents } from "./routes/Incidents";
 import { Replay } from "./routes/Replay";
 import { Runbooks } from "./routes/Runbooks";
 import { SLOs } from "./routes/SLOs";
 import { TopologyPage } from "./routes/Topology";
+import { ToastProvider } from "./components/shared/Toast";
 import "./styles/globals.css";
 
 const router = createBrowserRouter([
@@ -34,6 +36,10 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <ErrorBoundary>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

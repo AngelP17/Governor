@@ -1,4 +1,4 @@
-.PHONY: validate validate-shell validate-python validate-yaml validate-json validate-summary validate-k8s validate-policy doctor chaos webhook-demo summary clean ui-install ui-dev api-dev demo-ui
+.PHONY: validate validate-shell validate-python validate-yaml validate-json validate-summary validate-k8s validate-policy doctor chaos webhook-demo summary clean ui-install ui-dev ui-build api-dev api-smoke demo-ui
 
 validate: validate-shell validate-python validate-yaml validate-json
 	@echo "All validations passed."
@@ -18,6 +18,7 @@ validate-python:
 	@python3 -m py_compile scripts/generate_incident_report.py
 	@python3 -m py_compile scripts/alert_webhook_receiver.py
 	@python3 -m py_compile scripts/summarize_experiments.py
+	@python3 -m py_compile scripts/api_smoke_test.py
 	@echo "Python scripts OK."
 
 validate-yaml:
@@ -76,8 +77,14 @@ ui-install:
 ui-dev:
 	@cd ui && npm run dev
 
+ui-build:
+	@cd ui && npm run build
+
 api-dev:
 	@cd app && uvicorn main:app --host 0.0.0.0 --port 8080
+
+api-smoke:
+	@python3 scripts/api_smoke_test.py
 
 demo-ui:
 	@cd ui && VITE_API_BASE_URL=http://localhost:8080 npm run dev

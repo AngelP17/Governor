@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import math
 import random
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +19,91 @@ router = APIRouter(prefix="/platform", tags=["platform"])
 # Shared chaos state (imported by main.py for health checks)
 CHAOS_MODE = {"enabled": False, "probability": 0.0}
 _chaos_history: list[dict[str, Any]] = []
+
+# Runbook execution history. Newest first, capped to last 50 entries.
+_runbook_history: list[dict[str, Any]] = []
+_RUNBOOK_HISTORY_LIMIT = 50
+_ACTOR = "on-call-demo"
+
+
+class ChaosExperimentResponse(BaseModel):
+    """Audit entry for local chaos controls shown in the portfolio UI."""
+
+    id: str
+    action: Literal["trigger", "reset"]
+    label: str
+    timestamp: str
+    outcome: str
+    note: str
+    mttr_seconds: int | None = None
+    slo_met: bool | None = None
+
+
+class ChaosActionResponse(BaseModel):
+    """Response returned by local chaos trigger/reset controls."""
+
+    status: str
+    message: str
+    entry: ChaosExperimentResponse
+    mttr_seconds: int | None = None
+    slo_met: bool | None = None
+
+
+class RunbookActionResponse(BaseModel):
+    """Result envelope for demo runbook dry-run and execute actions."""
+
+    runbook_id: str
+    status: str
+    message: str
+    command: str | None = Field(
+        default=None,
+        description="Command displayed to the UI. It may be null for manual runbooks.",
+    )
+    output: str | None = None
+
+
+class RunbookHistoryEntry(BaseModel):
+    id: str
+    runbook_id: str
+    runbook_title: str
+    action: Literal["dry-run", "execute"]
+    status: str
+    command: str | None
+    started_at: str
+    duration_ms: int
+    exit_code: int
+    actor: str
+    output_excerpt: str | None = None
+
+
+class SLOPoint(BaseModel):
+    bucket: str
+    availability: float
+    mttr_seconds: float
+    error_rate: float
+    p95_latency_ms: float
+
+
+class MTTRHistoryPoint(BaseModel):
+    bucket: str
+    duration_seconds: float
+    incident_id: str | None = None
+
+
+class SLOTimeSeriesResponse(BaseModel):
+    range: Literal["1h", "24h", "7d"]
+    points: list[SLOPoint]
+    mttr_history: list[MTTRHistoryPoint]
+
+
+class PostmortemRequest(BaseModel):
+    incident_id: str
+
+
+class PostmortemResponse(BaseModel):
+    incident_id: str
+    generated_at: str
+    markdown: str
 
 
 def _iso_now() -> str:
@@ -88,6 +175,194 @@ def _list_incidents() -> list[dict[str, Any]]:
     return incidents or [_sample_incident()]
 
 
+def _record_runbook(
+    runbook_id: str,
+    runbook_title: str,
+    action: Literal["dry-run", "execute"],
+    status: str,
+    command: str | None,
+    output: str | None,
+    started_at: str,
+    duration_ms: int,
+    exit_code: int,
+) -> dict[str, Any]:
+    entry = {
+        "id": f"RB-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{len(_runbook_history) + 1:04d}",
+        "runbook_id": runbook_id,
+        "runbook_title": runbook_title,
+        "action": action,
+        "status": status,
+        "command": command,
+        "started_at": started_at,
+        "duration_ms": duration_ms,
+        "exit_code": exit_code,
+        "actor": _ACTOR,
+        "output_excerpt": (output.splitlines()[0] if output else None),
+    }
+    _runbook_history.insert(0, entry)
+    if len(_runbook_history) > _RUNBOOK_HISTORY_LIMIT:
+        del _runbook_history[_RUNBOOK_HISTORY_LIMIT:]
+    return entry
+
+
+def _synthetic_runbook_history() -> list[dict[str, Any]]:
+    """Return demo runbook history for the local portfolio surface."""
+    base = datetime(2026, 4, 22, 15, 30, 45, tzinfo=timezone.utc)
+    rows: list[dict[str, Any]] = []
+    samples: list[dict[str, Any]] = [
+        ("pod-crash", "Pod Crash Recovery", "execute", "executed", 12400, 0),
+        ("pod-crash", "Pod Crash Recovery", "dry-run", "dry_run_simulated", 480, 0),
+        ("pod-crash", "Pod Crash Recovery", "execute", "executed", 21000, 0),
+        ("deployment-rollback", "Deployment Rollback", "execute", "executed", 28000, 0),
+        ("high-latency", "High Latency", "execute", "executed", 18500, 0),
+        ("pod-crash", "Pod Crash Recovery", "dry-run", "dry_run_simulated", 510, 0),
+        ("pod-crash", "Pod Crash Recovery", "execute", "executed", 14200, 0),
+        ("dns-failure", "DNS Failure", "execute", "manual_required", 800, 1),
+    ]
+    for index, (rid, title, action, status, duration_ms, exit_code) in enumerate(samples):
+        ts = (base - timedelta(hours=index * 6)).isoformat().replace("+00:00", "Z")
+        rows.append(
+            {
+                "id": f"RB-2026-04-{22 - index:02d}-{(index * 37 + 1) % 9999:04d}",
+                "runbook_id": rid,
+                "runbook_title": title,
+                "action": action,
+                "status": status,
+                "command": f"scripts/remediate_{rid.replace('-', '_')}.sh incidents/INC-DEMO-{index}"
+                if exit_code == 0
+                else None,
+                "started_at": ts,
+                "duration_ms": duration_ms,
+                "exit_code": exit_code,
+                "actor": _ACTOR if exit_code == 0 else "sre-demo",
+                "output_excerpt": _excerpt_for(rid, status),
+            }
+        )
+    return rows
+
+
+def _excerpt_for(runbook_id: str, status: str) -> str:
+    if status == "manual_required":
+        return "This runbook requires manual steps."
+    if status == "dry_run_simulated":
+        return "No changes applied."
+    return {
+        "pod-crash": "Pods checked: 3/3 ready",
+        "high-latency": "Connection pool reset",
+        "deployment-rollback": "Rollback to previous revision",
+        "dns-failure": "Manual DNS check required",
+    }.get(runbook_id, "Remediation complete")
+
+
+def _slo_series(range_value: Literal["1h", "24h", "7d"]) -> dict[str, Any]:
+    """Return a deterministic but realistic-looking SLO time series."""
+    if range_value == "1h":
+        bucket_count = 12
+        label_prefix = "T-"
+        step_minutes = 5
+    elif range_value == "24h":
+        bucket_count = 24
+        label_prefix = "T-"
+        step_minutes = 60
+    else:
+        bucket_count = 7
+        label_prefix = "Day-"
+        step_minutes = 24 * 60
+
+    rng = random.Random({"1h": 11, "24h": 23, "7d": 7}[range_value])
+    points: list[dict[str, Any]] = []
+    mttr_history: list[dict[str, Any]] = []
+    for index in range(bucket_count):
+        if range_value == "7d":
+            label = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]
+        elif range_value == "1h":
+            label = f"{label_prefix}{((bucket_count - 1 - index) * step_minutes):02d}m"
+        else:
+            label = f"{label_prefix}{((bucket_count - 1 - index) * step_minutes // 60):02d}h"
+
+        wave = math.sin(index / 1.5)
+        availability = round(99.94 + (wave * 0.02) + (rng.random() - 0.5) * 0.015, 3)
+        error_rate = round(max(0.05, 0.18 + (wave * -0.03) + (rng.random() - 0.5) * 0.04), 3)
+        p95 = round(max(120, 198 + (wave * -10) + (rng.random() - 0.5) * 12), 1)
+        mttr = round(max(6, 22 - index * 0.6 + wave * 2 + (rng.random() - 0.5) * 3), 1)
+
+        points.append(
+            {
+                "bucket": label,
+                "availability": availability,
+                "mttr_seconds": mttr,
+                "error_rate": error_rate,
+                "p95_latency_ms": p95,
+            }
+        )
+        incident_id = f"INC-DEMO-{1000 + index}" if index in {2, 5} and range_value != "7d" else None
+        mttr_history.append(
+            {
+                "bucket": label,
+                "duration_seconds": mttr,
+                "incident_id": incident_id,
+            }
+        )
+    return {"range": range_value, "points": points, "mttr_history": mttr_history}
+
+
+def _postmortem_markdown(incident: dict[str, Any]) -> str:
+    duration = int(incident.get("duration_seconds", 12))
+    slo_met = bool(incident.get("slo_met", True))
+    started_at = incident.get("started_at", "2026-04-22T15:30:45Z")
+    return f"""# Postmortem: {incident['id']}
+
+## Summary
+{incident.get('title', 'Pod failure recovery test')} on service `{incident.get('service', 'resilience-pilot')}` in namespace `{incident.get('namespace', 'default')}` recovered in {duration} seconds. The MTTR objective of under 30 seconds was {'met' if slo_met else 'breached'}.
+
+## Detection
+- Source: PrometheusRule
+- Condition: Available replicas below desired count
+- Metric: kube_deployment_status_replicas_available
+- Threshold: available replicas < desired replicas
+- Actual: 2/3 replicas available
+- Runbook annotation: runbooks/{incident.get('runbook', 'pod-crash.md')}
+
+## Timeline
+| Phase | Time | Detail |
+| --- | --- | --- |
+| detect | T+04s | Prometheus alert fired |
+| snapshot | T+05s | Cluster context captured |
+| runbook | T+06s | Runbook selected from alert map |
+| recover | T+10s | Replacement pod scheduled |
+| validate | T+12s | SLO validated |
+| audit | T+13s | Report generated |
+
+## Impact
+- Availability: 99.982 percent, target 99.5 percent
+- MTTR: {duration} seconds, target under 30 seconds
+- Error rate: 0.14 percent, target under 0.5 percent
+- P95 latency: 184 ms, target under 500 ms
+
+## Root cause
+The chaos workflow terminated one FastAPI pod. The Deployment controller detected the unavailable replica and scheduled a replacement. No application bug was involved.
+
+## What went well
+- The replica gap was detected within 4 seconds.
+- The pre-recovery snapshot preserved cluster context for postmortem.
+- The runbook mapping automatically selected the correct operating procedure.
+
+## What we will improve
+- Activate metrics-server so the HPA can react to CPU pressure.
+- Add an Alertmanager webhook with local TLS for handoff workflows.
+- Capture a one-page decision record alongside the existing artifacts.
+
+## Artifacts
+- incidents/{incident['id']}/snapshot-pre
+- incidents/{incident['id']}/result.json
+- incidents/{incident['id']}/report.md
+- incidents/{incident['id']}/remediation.log
+- incidents/{incident['id']}/remediation-decision.json
+
+_Generated automatically by the Resilience Pilot control plane. Edit before publishing._
+"""
+
+
 @router.get("/summary")
 async def platform_summary() -> dict[str, Any]:
     latest = _list_incidents()[0]
@@ -123,6 +398,11 @@ async def platform_slo() -> dict[str, Any]:
     return (await platform_summary())["slo"]
 
 
+@router.get("/slo/history", response_model=SLOTimeSeriesResponse)
+async def platform_slo_history(range: Literal["1h", "24h", "7d"] = Query("24h")) -> dict[str, Any]:
+    return _slo_series(range)
+
+
 @router.get("/incidents")
 async def platform_incidents() -> list[dict[str, Any]]:
     return _list_incidents()
@@ -133,6 +413,8 @@ async def platform_incident_detail(incident_id: str) -> dict[str, Any]:
     incident = next(
         (item for item in _list_incidents() if item["id"] == incident_id), None
     )
+    if incident is None and incident_id == _sample_incident()["id"]:
+        incident = _sample_incident()
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
 
@@ -276,13 +558,45 @@ async def platform_runbooks() -> list[dict[str, Any]]:
     ]
 
 
-@router.post("/runbooks/{runbook_id}/dry-run")
+@router.get("/runbooks/history", response_model=list[RunbookHistoryEntry])
+async def platform_runbook_history_all() -> list[dict[str, Any]]:
+    if not _runbook_history:
+        return _synthetic_runbook_history()
+    return list(_runbook_history)
+
+
+@router.get("/runbooks/{runbook_id}/history", response_model=list[RunbookHistoryEntry])
+async def platform_runbook_history(runbook_id: str) -> list[dict[str, Any]]:
+    runbooks = await platform_runbooks()
+    if not any(r["id"] == runbook_id for r in runbooks):
+        raise HTTPException(status_code=404, detail="Runbook not found")
+    history = [e for e in _runbook_history if e["runbook_id"] == runbook_id]
+    if not history:
+        history = [e for e in _synthetic_runbook_history() if e["runbook_id"] == runbook_id]
+    return history
+
+
+@router.post("/runbooks/{runbook_id}/dry-run", response_model=RunbookActionResponse)
 async def platform_runbook_dry_run(runbook_id: str) -> dict[str, Any]:
     runbooks = await platform_runbooks()
     runbook = next((r for r in runbooks if r["id"] == runbook_id), None)
     if not runbook:
         raise HTTPException(status_code=404, detail="Runbook not found")
+    started_at = _iso_now()
+    started_monotonic = time.monotonic()
     if not runbook["supports_dry_run"]:
+        duration_ms = int((time.monotonic() - started_monotonic) * 1000)
+        _record_runbook(
+            runbook_id,
+            runbook["title"],
+            "dry-run",
+            "skipped",
+            None,
+            None,
+            started_at,
+            duration_ms,
+            1,
+        )
         return {
             "runbook_id": runbook_id,
             "status": "skipped",
@@ -291,22 +605,53 @@ async def platform_runbook_dry_run(runbook_id: str) -> dict[str, Any]:
             "output": None,
         }
     command = f"DRY_RUN=true {runbook['script']} incidents/INC-20260422153045"
+    output = (
+        f"[DRY RUN] Would execute: {command}\n"
+        f"[DRY RUN] Steps: check pods -> capture events -> verify readiness -> log result\n"
+        f"[DRY RUN] No changes applied."
+    )
+    duration_ms = int((time.monotonic() - started_monotonic) * 1000) or 480
+    _record_runbook(
+        runbook_id,
+        runbook["title"],
+        "dry-run",
+        "dry_run_simulated",
+        command,
+        output,
+        started_at,
+        duration_ms,
+        0,
+    )
     return {
         "runbook_id": runbook_id,
         "status": "dry_run_simulated",
         "message": f"Dry-run completed for {runbook['title']}.",
         "command": command,
-        "output": f"[DRY RUN] Would execute: {command}\n[DRY RUN] Steps: check pods -> capture events -> verify readiness -> log result\n[DRY RUN] No changes applied.",
+        "output": output,
     }
 
 
-@router.post("/runbooks/{runbook_id}/execute")
+@router.post("/runbooks/{runbook_id}/execute", response_model=RunbookActionResponse)
 async def platform_runbook_execute(runbook_id: str) -> dict[str, Any]:
     runbooks = await platform_runbooks()
     runbook = next((r for r in runbooks if r["id"] == runbook_id), None)
     if not runbook:
         raise HTTPException(status_code=404, detail="Runbook not found")
+    started_at = _iso_now()
+    started_monotonic = time.monotonic()
     if not runbook["script"]:
+        duration_ms = int((time.monotonic() - started_monotonic) * 1000) or 800
+        _record_runbook(
+            runbook_id,
+            runbook["title"],
+            "execute",
+            "manual_required",
+            None,
+            "This runbook requires manual steps.",
+            started_at,
+            duration_ms,
+            1,
+        )
         return {
             "runbook_id": runbook_id,
             "status": "manual_required",
@@ -315,12 +660,31 @@ async def platform_runbook_execute(runbook_id: str) -> dict[str, Any]:
             "output": None,
         }
     command = f"{runbook['script']} incidents/INC-20260422153045"
+    output = (
+        f"[EXECUTE] {command}\n"
+        f"[OK] Pods checked: 3/3 ready\n"
+        f"[OK] Events reviewed: no anomalies\n"
+        f"[OK] Readiness verified\n"
+        f"[OK] Result logged to incidents/INC-20260422153045/remediation.log"
+    )
+    duration_ms = int((time.monotonic() - started_monotonic) * 1000) or 12400
+    _record_runbook(
+        runbook_id,
+        runbook["title"],
+        "execute",
+        "executed",
+        command,
+        output,
+        started_at,
+        duration_ms,
+        0,
+    )
     return {
         "runbook_id": runbook_id,
         "status": "executed",
         "message": f"Executed {runbook['title']} remediation.",
         "command": command,
-        "output": f"[EXECUTE] {command}\n[OK] Pods checked: 3/3 ready\n[OK] Events reviewed: no anomalies\n[OK] Readiness verified\n[OK] Result logged to incidents/INC-20260422153045/remediation.log",
+        "output": output,
     }
 
 
@@ -540,7 +904,7 @@ async def platform_controls() -> list[dict[str, Any]]:
     ]
 
 
-@router.post("/chaos/degraded")
+@router.post("/chaos/degraded", response_model=ChaosActionResponse)
 async def platform_chaos_degraded() -> dict[str, Any]:
     CHAOS_MODE["enabled"] = True
     CHAOS_MODE["probability"] = 0.5
@@ -562,7 +926,7 @@ async def platform_chaos_degraded() -> dict[str, Any]:
     }
 
 
-@router.post("/chaos/reset")
+@router.post("/chaos/reset", response_model=ChaosActionResponse)
 async def platform_chaos_reset() -> dict[str, Any]:
     was_enabled = CHAOS_MODE["enabled"]
     CHAOS_MODE["enabled"] = False
@@ -600,6 +964,21 @@ async def platform_chaos_reset() -> dict[str, Any]:
     }
 
 
-@router.get("/chaos/history")
+@router.get("/chaos/history", response_model=list[ChaosExperimentResponse])
 async def platform_chaos_history() -> list[dict[str, Any]]:
     return list(reversed(_chaos_history))
+
+
+@router.post("/postmortem", response_model=PostmortemResponse)
+async def platform_postmortem(body: PostmortemRequest) -> dict[str, Any]:
+    incidents = _list_incidents()
+    incident = next((i for i in incidents if i["id"] == body.incident_id), None)
+    if incident is None:
+        incident = _sample_incident() if body.incident_id == _sample_incident()["id"] else None
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return {
+        "incident_id": body.incident_id,
+        "generated_at": _iso_now(),
+        "markdown": _postmortem_markdown(incident),
+    }

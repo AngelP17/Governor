@@ -7,7 +7,7 @@ export const statusLabel = (status: Status | "resolved" | boolean): string => {
 
 export const statusTone = (status: Status | "resolved" | boolean): string => {
   if (typeof status === "boolean") return status ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-rose-400/30 bg-rose-400/10 text-rose-200";
-  if (["healthy", "recovered", "met", "synced", "passing", "configured", "resolved"].includes(status)) {
+  if (["healthy", "recovered", "met", "synced", "passing", "configured", "enforced", "resolved"].includes(status)) {
     return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
   }
   if (["degraded", "recovering", "pending", "documented gap", "observing", "reconciling"].includes(status)) {
@@ -18,7 +18,7 @@ export const statusTone = (status: Status | "resolved" | boolean): string => {
 
 export const dotTone = (status: Status | "resolved" | boolean): string => {
   if (typeof status === "boolean") return status ? "bg-emerald-300" : "bg-rose-300";
-  if (["healthy", "recovered", "met", "synced", "passing", "configured", "resolved"].includes(status)) return "bg-emerald-300";
+  if (["healthy", "recovered", "met", "synced", "passing", "configured", "enforced", "resolved"].includes(status)) return "bg-emerald-300";
   if (["degraded", "recovering", "pending", "documented gap", "observing", "reconciling"].includes(status)) return "bg-amber-300";
   return "bg-rose-300";
 };
