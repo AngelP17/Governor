@@ -69,7 +69,7 @@ spec:
         - name: governor
           # Image tag is updated by GitOps workflow
           # FORMAT: your-dockerhub-username/governor:TAG
-          image: angellpt/governor:6171472d3c6506d0a09023045938ca6d21da2fb3
+          image: angellpt/governor:5c0f6e65f9beac8d7a3ae3176f7a0e4bbe3412e5
           imagePullPolicy: IfNotPresent
           
           ports:
