@@ -54,7 +54,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(kube_pod_container_status_restarts_total{pod=~\"resilience-pilot.*\"})",
+          "expr": "sum(kube_pod_container_status_restarts_total{pod=~\"governor.*\"})",
           "refId": "A"
         }
       ],
@@ -236,7 +236,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "increase(kube_pod_container_status_restarts_total{pod=~\"resilience-pilot.*\"}[5m])",
+          "expr": "increase(kube_pod_container_status_restarts_total{pod=~\"governor.*\"}[5m])",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -392,13 +392,13 @@
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["resilience-pilot", "sre", "kubernetes"],
+  "tags": ["governor", "sre", "kubernetes"],
   "templating": { "list": [] },
   "time": { "from": "now-15m", "to": "now" },
   "timepicker": {},
   "timezone": "",
   "title": "Kubernetes Reliability Platform",
-  "uid": "resilience-pilot",
+  "uid": "governor",
   "version": 1,
   "weekStart": ""
 }

@@ -1,5 +1,5 @@
 ################################################################################
-# The Resilience Pilot - Prometheus Alerting Rules
+# The Governor - Prometheus Alerting Rules
 #
 # SRE Concepts Demonstrated:
 # - SLI/SLO: Service Level Indicators driving alerts
@@ -10,10 +10,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: resilience-pilot-alerts
+  name: governor-alerts
   namespace: monitoring
   labels:
-    app: resilience-pilot
+    app: governor
     prometheus: kube-prometheus
     role: alert-rules
 spec:
@@ -22,14 +22,14 @@ spec:
     # Self-Healing Alerts
     # These detect when Kubernetes self-healing is actively working
     # ========================================================================
-    - name: resilience-pilot.self-healing
+    - name: governor.self-healing
       rules:
         # Alert if pods are restarting frequently
         # This indicates either application bugs or infrastructure issues
         - alert: HighPodRestartRate
           expr: |
             increase(kube_pod_container_status_restarts_total{
-              pod=~"resilience-pilot.*"
+              pod=~"governor.*"
             }[5m]) > 3
           for: 1m
           labels:
@@ -41,13 +41,13 @@ spec:
               Pod {{ $labels.pod }} has restarted {{ $value }} times 
               in the last 5 minutes. This may indicate application instability
               or failed liveness probes.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/pod-crash.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/pod-crash.md"
 
         # Alert if any pod is in CrashLoopBackOff
         - alert: PodCrashLoopBackOff
           expr: |
             kube_pod_container_status_waiting_reason{
-              pod=~"resilience-pilot.*",
+              pod=~"governor.*",
               reason="CrashLoopBackOff"
             } > 0
           for: 2m
@@ -59,13 +59,13 @@ spec:
             description: |
               Pod {{ $labels.pod }} is in CrashLoopBackOff state.
               Self-healing is failing to recover the application.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/pod-crash.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/pod-crash.md"
 
     # ========================================================================
     # SLO-Based Alerts (Error Budget)
     # Alerts based on Service Level Objectives
     # ========================================================================
-    - name: resilience-pilot.slo
+    - name: governor.slo
       rules:
         # High error rate alert (SLO: 99.5% success rate)
         - alert: HighErrorRate
@@ -84,7 +84,7 @@ spec:
             description: |
               Error rate is {{ $value | humanizePercentage }} over the last 5 minutes.
               SLO target is < 0.5% error rate.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/deployment-rollback.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/deployment-rollback.md"
 
         # High latency alert (SLO: P95 < 500ms)
         - alert: HighLatencyP95
@@ -101,20 +101,20 @@ spec:
             description: |
               P95 latency for /health endpoint is {{ $value | humanizeDuration }}.
               SLO target is P95 < 500ms.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/high-latency.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/high-latency.md"
 
     # ========================================================================
     # Availability Alerts
     # ========================================================================
-    - name: resilience-pilot.availability
+    - name: governor.availability
       rules:
         # Alert if replicas are below desired count
         - alert: InsufficientReplicas
           expr: |
             kube_deployment_status_replicas_available{
-              deployment="resilience-pilot"
+              deployment="governor"
             } < kube_deployment_spec_replicas{
-              deployment="resilience-pilot"
+              deployment="governor"
             }
           for: 5m
           labels:
@@ -123,15 +123,15 @@ spec:
           annotations:
             summary: "Insufficient replicas available"
             description: |
-              Deployment resilience-pilot has {{ $value }} available replicas 
+              Deployment governor has {{ $value }} available replicas 
               but {{ $labels.spec_replicas }} are desired.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/deployment-rollback.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/deployment-rollback.md"
 
         # Alert if no replicas are available
         - alert: ServiceDown
           expr: |
             kube_deployment_status_replicas_available{
-              deployment="resilience-pilot"
+              deployment="governor"
             } == 0
           for: 1m
           labels:
@@ -141,15 +141,15 @@ spec:
           annotations:
             summary: "Service is completely down"
             description: |
-              Deployment resilience-pilot has no available replicas.
+              Deployment governor has no available replicas.
               Immediate action required!
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/pod-crash.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/pod-crash.md"
 
     # ========================================================================
     # Error Budget Burn Rate Alerts
     # Detects fast and slow error budget consumption
     # ========================================================================
-    - name: resilience-pilot.error-budget
+    - name: governor.error-budget
       rules:
         - alert: HighErrorRateFastBurn
           expr: |
@@ -168,7 +168,7 @@ spec:
               Error rate is {{ $value | humanizePercentage }} over the last 2 minutes,
               exceeding 10% threshold. This indicates a rapid error budget burn
               requiring immediate attention.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/deployment-rollback.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/deployment-rollback.md"
 
         - alert: HighErrorRateSlowBurn
           expr: |
@@ -187,4 +187,4 @@ spec:
               Error rate is {{ $value | humanizePercentage }} over the last 30 minutes,
               exceeding 2% threshold. This indicates a slow, sustained error budget burn
               that may indicate a gradual degradation.
-            runbook_url: "https://github.com/AngelP17/k8s-resilience-pilot/blob/main/runbooks/deployment-rollback.md"
+            runbook_url: "https://github.com/AngelP17/governor/blob/main/runbooks/deployment-rollback.md"

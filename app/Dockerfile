@@ -1,5 +1,5 @@
 ################################################################################
-# The Resilience Pilot - Multi-Stage Dockerfile
+# The Governor - Multi-Stage Dockerfile
 #
 # Security Best Practices Demonstrated:
 # - Multi-stage build (minimal attack surface)
@@ -65,7 +65,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
 # Labels for container metadata (OCI standard)
-LABEL org.opencontainers.image.title="The Resilience Pilot"
+LABEL org.opencontainers.image.title="The Governor"
 LABEL org.opencontainers.image.description="Production-grade SRE demonstration API"
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.authors="SRE Team"

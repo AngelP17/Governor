@@ -1,5 +1,5 @@
 """
-The Resilience Pilot - FastAPI Application
+The Governor - FastAPI Application
 
 A lightweight, production-ready API designed for SRE demonstrations:
 - Health checks for Kubernetes liveness/readiness probes
@@ -64,13 +64,13 @@ START_TIME = time.time()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown events."""
-    print("🚀 Resilience Pilot starting up...")
+    print("🚀 Governor starting up...")
     yield
-    print("👋 Resilience Pilot shutting down...")
+    print("👋 Governor shutting down...")
 
 
 app = FastAPI(
-    title="The Resilience Pilot",
+    title="The Governor",
     description="A production-grade API for SRE demonstrations",
     version="1.0.0",
     lifespan=lifespan,
@@ -123,7 +123,7 @@ async def instrument_requests(request, call_next):
 async def root():
     """Root endpoint with API information."""
     return {
-        "application": "The Resilience Pilot",
+        "application": "The Governor",
         "version": "1.0.0",
         "endpoints": {
             "health": "/health",

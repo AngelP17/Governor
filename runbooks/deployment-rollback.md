@@ -12,19 +12,19 @@
 
 ```bash
 # Check rollout status
-kubectl rollout status deployment/resilience-pilot -n default
+kubectl rollout status deployment/governor -n default
 
 # Check revision history
-kubectl rollout history deployment/resilience-pilot -n default
+kubectl rollout history deployment/governor -n default
 
 # Check current pod status
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get pods -l app=governor -n default
 
 # Check recent events
 kubectl get events -n default --sort-by='.lastTimestamp' | head -30
 
 # Check current deployment revision
-kubectl get deployment resilience-pilot -n default -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}'
+kubectl get deployment governor -n default -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}'
 ```
 
 ## Metrics to Review
@@ -41,7 +41,7 @@ Check in Prometheus:
 ```promql
 sum(rate(http_requests_total{namespace="default",code=~"5.."}[5m]))
   / sum(rate(http_requests_total{namespace="default"}[5m]))
-kube_deployment_status_replicas_available{namespace="default",deployment="resilience-pilot"}
+kube_deployment_status_replicas_available{namespace="default",deployment="governor"}
 ```
 
 ## Likely Causes
@@ -60,32 +60,32 @@ kube_deployment_status_replicas_available{namespace="default",deployment="resili
 
 ```bash
 # Check what changed in the latest revision
-kubectl rollout history deployment/resilience-pilot -n default --revision=<latest-revision>
+kubectl rollout history deployment/governor -n default --revision=<latest-revision>
 ```
 
 ### 2. Roll back to the previous revision
 
 ```bash
-kubectl rollout undo deployment/resilience-pilot -n default
+kubectl rollout undo deployment/governor -n default
 ```
 
 To roll back to a specific revision:
 
 ```bash
-kubectl rollout undo deployment/resilience-pilot -n default --to-revision=<revision-number>
+kubectl rollout undo deployment/governor -n default --to-revision=<revision-number>
 ```
 
 ### 3. Verify the rollback
 
 ```bash
 # Check rollout status
-kubectl rollout status deployment/resilience-pilot -n default
+kubectl rollout status deployment/governor -n default
 
 # Verify pods are running with the previous image
-kubectl get pods -l app=resilience-pilot -n default -o jsonpath='{.items[*].spec.containers[0].image}'
+kubectl get pods -l app=governor -n default -o jsonpath='{.items[*].spec.containers[0].image}'
 
 # Check pod health
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get pods -l app=governor -n default
 ```
 
 ### 4. Check application health
@@ -95,7 +95,7 @@ kubectl get pods -l app=resilience-pilot -n default
 curl -s -o /dev/null -w "%{http_code}" http://<service-endpoint>/health
 
 # Check error rate returning to normal
-kubectl logs -l app=resilience-pilot -n default --tail=50 | grep -i "error"
+kubectl logs -l app=governor -n default --tail=50 | grep -i "error"
 ```
 
 ## Recovery Criteria
@@ -107,8 +107,8 @@ kubectl logs -l app=resilience-pilot -n default --tail=50 | grep -i "error"
 
 ```bash
 # Full recovery verification
-kubectl get deployment resilience-pilot -n default
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get deployment governor -n default
+kubectl get pods -l app=governor -n default
 curl -s -o /dev/null -w "%{http_code}" http://<service-endpoint>/health
 ```
 
@@ -118,10 +118,10 @@ After recovery, investigate the failed deployment:
 
 ```bash
 # Review the failed revision details
-kubectl rollout history deployment/resilience-pilot -n default --revision=<failed-revision>
+kubectl rollout history deployment/governor -n default --revision=<failed-revision>
 
 # Compare with the working revision
-kubectl rollout history deployment/resilience-pilot -n default --revision=<working-revision>
+kubectl rollout history deployment/governor -n default --revision=<working-revision>
 ```
 
 Document findings and update the deployment checklist if needed.

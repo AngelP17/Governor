@@ -12,7 +12,7 @@ export const lifecycle: TimelineEvent[] = [
 export const demoSummary: PlatformSummary = {
   mode: "demo",
   status: "recovered",
-  service: "resilience-pilot",
+  service: "governor",
   namespace: "default",
   replicas: { desired: 3, available: 3, ready: 3 },
   slo: {
@@ -33,7 +33,7 @@ export const demoIncidents: Incident[] = [
     title: "Pod failure recovery test",
     status: "resolved",
     severity: "warning",
-    service: "resilience-pilot",
+    service: "governor",
     namespace: "default",
     started_at: "2026-04-22T15:30:45Z",
     resolved_at: "2026-04-22T15:30:57Z",
@@ -47,7 +47,7 @@ export const demoIncidents: Incident[] = [
     title: "High latency validation drill",
     status: "resolved",
     severity: "warning",
-    service: "resilience-pilot",
+    service: "governor",
     namespace: "default",
     started_at: "2026-04-21T10:17:22Z",
     resolved_at: "2026-04-21T10:17:43Z",
@@ -61,7 +61,7 @@ export const demoIncidents: Incident[] = [
     title: "Rollback readiness check",
     status: "resolved",
     severity: "critical",
-    service: "resilience-pilot",
+    service: "governor",
     namespace: "default",
     started_at: "2026-04-20T19:09:11Z",
     resolved_at: "2026-04-20T19:09:39Z",
@@ -106,7 +106,7 @@ export const demoTopology: Topology = {
     { id: "local", label: "Local Host", group: "Local Host", status: "healthy", role: "Developer, CI, and demo operator entrypoint", files: ["setup.sh", "chaos_monkey.sh"], commands: ["./setup.sh", "./chaos_monkey.sh"] },
     { id: "k3d", label: "k3d Cluster", group: "k3d Cluster", status: "healthy", role: "Three-node local Kubernetes control plane", files: ["terraform/main.tf"], commands: ["terraform -chdir=terraform apply"] },
     { id: "service", label: "Kubernetes Service", group: "Application Namespace", status: "healthy", role: "Routes localhost:8080 traffic to FastAPI pods", files: ["manifests/service.yaml"], commands: ["curl http://localhost:8080/health"] },
-    { id: "pods", label: "FastAPI Pods", group: "Application Namespace", status: "healthy", role: "Three replicas with probes and RED metrics", files: ["manifests/deployment.yaml", "app/main.py"], commands: ["kubectl get pods -l app=resilience-pilot -n default"] },
+    { id: "pods", label: "FastAPI Pods", group: "Application Namespace", status: "healthy", role: "Three replicas with probes and RED metrics", files: ["manifests/deployment.yaml", "app/main.py"], commands: ["kubectl get pods -l app=governor -n default"] },
     { id: "prometheus", label: "Prometheus", group: "Monitoring Namespace", status: "observing", role: "Scrapes FastAPI /metrics and evaluates alert rules", files: ["monitoring/prometheus-rules.yaml"], commands: ["kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring"] },
     { id: "grafana", label: "Grafana", group: "Monitoring Namespace", status: "observing", role: "Visualizes RED and Kubernetes metrics", files: ["monitoring/grafana-dashboard.json"], commands: ["kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring"] },
     { id: "argocd", label: "ArgoCD", group: "GitOps Namespace", status: "reconciling", role: "Keeps cluster state aligned with Git manifests", files: ["setup_argocd.sh"], commands: ["kubectl port-forward svc/argocd-server 8443:443 -n argocd"] },
@@ -285,7 +285,7 @@ The chaos workflow terminated one FastAPI pod. The Deployment controller detecte
 - incidents/${incidentId}/remediation.log
 - incidents/${incidentId}/remediation-decision.json
 
-_Generated automatically by the Resilience Pilot control plane. Edit before publishing._
+_Generated automatically by the Governor control plane. Edit before publishing._
 `;
   return {
     incident_id: incidentId,

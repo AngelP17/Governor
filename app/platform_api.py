@@ -125,7 +125,7 @@ def _sample_incident() -> dict[str, Any]:
         "title": "Pod failure recovery test",
         "status": "resolved",
         "severity": "warning",
-        "service": "resilience-pilot",
+        "service": "governor",
         "namespace": "default",
         "started_at": "2026-04-22T15:30:45Z",
         "resolved_at": "2026-04-22T15:30:57Z",
@@ -155,7 +155,7 @@ def _incident_from_dir(path: Path) -> dict[str, Any]:
         "title": "Pod failure recovery test",
         "status": "resolved" if result.get("slo_met", True) else "slo_breached",
         "severity": "warning",
-        "service": "resilience-pilot",
+        "service": "governor",
         "namespace": "default",
         "started_at": started,
         "resolved_at": started,
@@ -313,7 +313,7 @@ def _postmortem_markdown(incident: dict[str, Any]) -> str:
     return f"""# Postmortem: {incident['id']}
 
 ## Summary
-{incident.get('title', 'Pod failure recovery test')} on service `{incident.get('service', 'resilience-pilot')}` in namespace `{incident.get('namespace', 'default')}` recovered in {duration} seconds. The MTTR objective of under 30 seconds was {'met' if slo_met else 'breached'}.
+{incident.get('title', 'Pod failure recovery test')} on service `{incident.get('service', 'governor')}` in namespace `{incident.get('namespace', 'default')}` recovered in {duration} seconds. The MTTR objective of under 30 seconds was {'met' if slo_met else 'breached'}.
 
 ## Detection
 - Source: PrometheusRule
@@ -359,7 +359,7 @@ The chaos workflow terminated one FastAPI pod. The Deployment controller detecte
 - incidents/{incident['id']}/remediation.log
 - incidents/{incident['id']}/remediation-decision.json
 
-_Generated automatically by the Resilience Pilot control plane. Edit before publishing._
+_Generated automatically by the Governor control plane. Edit before publishing._
 """
 
 
@@ -369,7 +369,7 @@ async def platform_summary() -> dict[str, Any]:
     return {
         "mode": "live",
         "status": "healthy" if not CHAOS_MODE["enabled"] else "degraded",
-        "service": "resilience-pilot",
+        "service": "governor",
         "namespace": "default",
         "replicas": {"desired": 3, "available": 3, "ready": 3},
         "slo": {

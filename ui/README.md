@@ -1,6 +1,6 @@
-# Resilience Pilot UI
+# Governor UI
 
-Resilience Pilot UI is a local-first reliability control plane for demonstrating Kubernetes failure recovery, SLO validation, incident context capture, runbook mapping, and auditability. It converts the repo's scripts, manifests, metrics, and incident artifacts into a guided operational surface for Platform/SRE portfolio review.
+Governor UI is a local-first reliability control plane for demonstrating Kubernetes failure recovery, SLO validation, incident context capture, runbook mapping, and auditability. It converts the repo's scripts, manifests, metrics, and incident artifacts into a guided operational surface for Platform/SRE portfolio review.
 
 ## What it shows
 

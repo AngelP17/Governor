@@ -1,8 +1,8 @@
 #!/bin/bash
 ################################################################################
-# The Resilience Pilot - ArgoCD GitOps Setup
+# The Governor - ArgoCD GitOps Setup
 #
-# Deploys ArgoCD and configures it to manage the resilience-pilot application.
+# Deploys ArgoCD and configures it to manage the governor application.
 # Enables automatic synchronization with self-healing.
 #
 # GitOps Concepts:
@@ -80,16 +80,16 @@ deploy_argocd() {
 # CREATE APPLICATION MANIFEST
 # ============================================================================
 create_application() {
-    log_info "Creating ArgoCD Application for resilience-pilot..."
+    log_info "Creating ArgoCD Application for governor..."
     
     # Get the repository URL from git remote (or use placeholder)
-    REPO_URL=$(git remote get-url origin 2>/dev/null || echo "https://github.com/YOUR_USERNAME/k8s-resilience-pilot.git")
+    REPO_URL=$(git remote get-url origin 2>/dev/null || echo "https://github.com/YOUR_USERNAME/governor.git")
     
     cat << EOF | kubectl apply -f -
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: resilience-pilot
+  name: governor
   namespace: ${NAMESPACE}
   # Finalizer ensures resources are cleaned up when app is deleted
   finalizers:
@@ -201,7 +201,7 @@ print_access_info() {
 main() {
     echo ""
     echo "============================================================================"
-    echo "  The Resilience Pilot - ArgoCD GitOps Setup"
+    echo "  The Governor - ArgoCD GitOps Setup"
     echo "============================================================================"
     echo ""
     

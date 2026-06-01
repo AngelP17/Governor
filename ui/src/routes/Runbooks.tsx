@@ -124,7 +124,7 @@ export function Runbooks() {
             <FileText size={28} className="shrink-0 text-sky-200" />
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {[["File", selected.file], ["Severity", selected.severity], ["Script", selected.script || "Manual DNS checks"], ["Validation", "kubectl get pods -l app=resilience-pilot -n default"]].map(([label, value]) => (
+            {[["File", selected.file], ["Severity", selected.severity], ["Script", selected.script || "Manual DNS checks"], ["Validation", "kubectl get pods -l app=governor -n default"]].map(([label, value]) => (
               <div key={label} className="rounded-xl border border-line bg-slate-950/45 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</p><p className="mt-2 break-all font-mono text-xs text-slate-200">{value}</p></div>
             ))}
           </div>

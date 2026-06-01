@@ -30,7 +30,7 @@ kubectl get nodes
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `cluster_name` | resilience-pilot | Name of the k3d cluster |
+| `cluster_name` | governor | Name of the k3d cluster |
 | `server_count` | 1 | Control plane nodes |
 | `agent_count` | 2 | Worker nodes |
 | `lb_host_port` | 8080 | Host port for LoadBalancer |
@@ -41,12 +41,12 @@ kubectl get nodes
 graph TB
     subgraph "k3d Cluster"
         subgraph "Control Plane"
-            S[Server Node<br/>k3d-resilience-pilot-server-0]
+            S[Server Node<br/>k3d-governor-server-0]
         end
         
         subgraph "Worker Nodes"
-            A1[Agent Node 1<br/>k3d-resilience-pilot-agent-0]
-            A2[Agent Node 2<br/>k3d-resilience-pilot-agent-1]
+            A1[Agent Node 1<br/>k3d-governor-agent-0]
+            A2[Agent Node 2<br/>k3d-governor-agent-1]
         end
         
         S --> A1

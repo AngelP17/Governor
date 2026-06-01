@@ -1,4 +1,4 @@
-import { ArrowsClockwise, BookOpenText, ChartLine, GitBranch, ListChecks, PlayCircle, Pulse, ShieldCheck, Siren } from "@phosphor-icons/react";
+import { ArrowsClockwise, BookOpenText, ChartLine, Gauge, GitBranch, ListChecks, PlayCircle, Pulse, ShieldCheck, Siren } from "@phosphor-icons/react";
 import { NavLink, Outlet } from "react-router-dom";
 import { clsx } from "clsx";
 import { StatusBadge } from "../shared/StatusBadge";
@@ -20,8 +20,13 @@ export function AppShell() {
       <div className="mx-auto grid min-h-[100dvh] max-w-[1660px] grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="border-b border-line bg-graphite/80 px-4 py-4 backdrop-blur lg:sticky lg:top-0 lg:h-[100dvh] lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
           <div className="flex items-center justify-between gap-4 lg:block">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Resilience Pilot</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 shadow-[0_0_18px_rgba(34,211,238,0.18)]">
+                  <Gauge size={16} weight="duotone" />
+                </span>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-cyan-300/80">Governor</p>
+              </div>
               <h1 className="mt-2 text-lg font-semibold tracking-tight text-white lg:text-xl">Reliability Control Plane</h1>
             </div>
             <StatusBadge status="healthy">LOCAL FIRST</StatusBadge>
@@ -59,7 +64,7 @@ export function AppShell() {
         <div className="min-w-0">
           <header className="sticky top-0 z-30 border-b border-line bg-graphite/78 px-4 py-3 backdrop-blur md:px-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="truncate font-mono text-xs text-slate-500">AngelP17/k8s-resilience-pilot</p>
+              <p className="truncate font-mono text-xs text-slate-500">AngelP17/governor</p>
               <div className="flex shrink-0 items-center gap-2">
                 <StatusBadge status="observing">API FALLBACK READY</StatusBadge>
                 <StatusBadge status="synced">GITOPS</StatusBadge>

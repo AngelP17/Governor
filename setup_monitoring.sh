@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# The Resilience Pilot - Monitoring Stack Setup
+# The Governor - Monitoring Stack Setup
 #
 # Deploys Prometheus and Grafana using the kube-prometheus-stack Helm chart.
 # Includes pre-configured dashboards and alerting rules.
@@ -136,12 +136,12 @@ prometheus:
     
     # Additional scrape configs for our app
     additionalScrapeConfigs:
-      - job_name: 'resilience-pilot'
+      - job_name: 'governor'
         kubernetes_sd_configs:
           - role: pod
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
-            regex: resilience-pilot
+            regex: governor
             action: keep
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             regex: "true"
@@ -206,8 +206,8 @@ deploy_custom_dashboard() {
     
     if [[ -f "${SCRIPT_DIR}/monitoring/grafana-dashboard.json" ]]; then
         # Create ConfigMap for the dashboard
-        kubectl create configmap resilience-pilot-dashboard \
-            --from-file=resilience-pilot.json="${SCRIPT_DIR}/monitoring/grafana-dashboard.json" \
+        kubectl create configmap governor-dashboard \
+            --from-file=governor.json="${SCRIPT_DIR}/monitoring/grafana-dashboard.json" \
             --namespace ${NAMESPACE} \
             --dry-run=client -o yaml | \
             kubectl label --local -f - grafana_dashboard=1 -o yaml | \
@@ -273,7 +273,7 @@ print_access_info() {
 main() {
     echo ""
     echo "============================================================================"
-    echo "  The Resilience Pilot - Monitoring Stack Setup"
+    echo "  The Governor - Monitoring Stack Setup"
     echo "============================================================================"
     echo ""
     

@@ -1,4 +1,4 @@
-# This NetworkPolicy scopes traffic for resilience-pilot pods without breaking
+# This NetworkPolicy scopes traffic for governor pods without breaking
 # the local demo flow.
 #
 # Ingress rules allow:
@@ -15,14 +15,14 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: resilience-pilot-netpol
+  name: governor-netpol
   namespace: default
   labels:
-    app: resilience-pilot
+    app: governor
 spec:
   podSelector:
     matchLabels:
-      app: resilience-pilot
+      app: governor
   policyTypes:
     - Ingress
     - Egress

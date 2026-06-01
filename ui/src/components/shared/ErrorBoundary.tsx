@@ -19,7 +19,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     if (typeof console !== "undefined") {
-      console.error("Resilience Pilot UI crashed:", error, info.componentStack);
+      console.error("Governor UI crashed:", error, info.componentStack);
     }
   }
 

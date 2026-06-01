@@ -10,13 +10,13 @@
 
 ```bash
 # Check application pod status
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get pods -l app=governor -n default
 
 # Check CoreDNS pods
 kubectl get pods -l k8s-app=kube-dns -n kube-system
 
 # Test DNS resolution from inside the cluster
-kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup resilience-pilot.default.svc.cluster.local
+kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup governor.default.svc.cluster.local
 
 # Test external DNS
 kubectl run dns-test-ext --image=busybox:1.36 --rm -it --restart=Never -- nslookup google.com
@@ -128,10 +128,10 @@ cat /etc/resolv.conf
 
 ```bash
 # Verify DNS resolution
-kubectl run dns-verify --image=busybox:1.36 --rm -it --restart=Never -- nslookup resilience-pilot.default.svc.cluster.local
+kubectl run dns-verify --image=busybox:1.36 --rm -it --restart=Never -- nslookup governor.default.svc.cluster.local
 
 # Verify application health
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get pods -l app=governor -n default
 curl -s -o /dev/null -w "%{http_code}" http://<service-endpoint>/health
 ```
 

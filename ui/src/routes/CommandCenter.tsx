@@ -115,10 +115,10 @@ export function CommandCenter() {
           </div>
           <div className="mt-9 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="min-w-0">
-              <h1 className="text-3xl font-semibold leading-[1.05] tracking-tight text-white md:text-5xl lg:text-6xl">Resilience Pilot</h1>
+              <h1 className="text-3xl font-semibold leading-[1.05] tracking-tight text-white md:text-5xl lg:text-6xl">Governor</h1>
               <p className="mt-4 text-lg font-medium text-slate-200 md:text-xl">Kubernetes Reliability Control Plane</p>
               <p className="mt-5 max-w-[66ch] text-base leading-7 text-slate-400">
-                A local platform demo that proves detection, recovery, SLO validation, and auditability from one operational surface.
+                A governor is a control mechanism that keeps a machine within safe operating limits. This one watches a Kubernetes cluster: detect SLO breach, drive recovery through a runbook, and leave an auditable trail.
               </p>
             </div>
             <div className="grid gap-3">

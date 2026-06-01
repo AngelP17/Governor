@@ -10,13 +10,13 @@
 
 ```bash
 # Check pod status and readiness
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get pods -l app=governor -n default
 
 # Check pod resource usage
-kubectl top pods -l app=resilience-pilot -n default
+kubectl top pods -l app=governor -n default
 
 # Check for pending or throttled requests
-kubectl get pods -l app=resilience-pilot -n default -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")]}'
+kubectl get pods -l app=governor -n default -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")]}'
 ```
 
 ## Metrics to Review
@@ -33,8 +33,8 @@ Check in Prometheus:
 
 ```promql
 histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace="default"}[5m])) by (le))
-container_cpu_usage_seconds_total{namespace="default", pod=~"resilience-pilot.*"}
-container_memory_working_set_bytes{namespace="default", pod=~"resilience-pilot.*"}
+container_cpu_usage_seconds_total{namespace="default", pod=~"governor.*"}
+container_memory_working_set_bytes{namespace="default", pod=~"governor.*"}
 ```
 
 ## Likely Causes
@@ -52,7 +52,7 @@ container_memory_working_set_bytes{namespace="default", pod=~"resilience-pilot.*
 ### 1. Review resource requests and limits
 
 ```bash
-kubectl get deployment resilience-pilot -n default -o jsonpath='{.spec.template.spec.containers[0].resources}'
+kubectl get deployment governor -n default -o jsonpath='{.spec.template.spec.containers[0].resources}'
 ```
 
 If CPU is throttled, increase CPU limit or adjust requests for better scheduling.
@@ -69,7 +69,7 @@ Verify HPA is configured and has room to scale. Check if maxReplicas is too low.
 ### 3. Review application logs for slow queries or operations
 
 ```bash
-kubectl logs -l app=resilience-pilot -n default --tail=200 | grep -i "slow\|timeout\|latency\|elapsed"
+kubectl logs -l app=governor -n default --tail=200 | grep -i "slow\|timeout\|latency\|elapsed"
 ```
 
 ### 4. Check downstream dependency health
@@ -82,8 +82,8 @@ kubectl exec -it <pod-name> -n default -- curl -s -o /dev/null -w "%{http_code}"
 ### 5. Check for memory pressure and GC
 
 ```bash
-kubectl top pods -l app=resilience-pilot -n default
-kubectl logs -l app=resilience-pilot -n default --tail=200 | grep -i "gc\|oom\|memory"
+kubectl top pods -l app=governor -n default
+kubectl logs -l app=governor -n default --tail=200 | grep -i "gc\|oom\|memory"
 ```
 
 If GC pauses are frequent, increase memory limit or tune GC parameters.

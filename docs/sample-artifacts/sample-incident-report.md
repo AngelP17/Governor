@@ -6,7 +6,7 @@
 |-------|-------|
 | Incident ID | `INC-20260422153045` |
 | Failure Type | `pod-termination` |
-| Victim Pod | `resilience-pilot-7d8f9c6b5-x2k4p` |
+| Victim Pod | `governor-7d8f9c6b5-x2k4p` |
 | Timestamp (UTC) | `2026-04-22T15:30:45Z` |
 
 ## SLO Evaluation
@@ -21,18 +21,18 @@
 
 ```
 NAME                                  READY   STATUS        RESTARTS   AGE
-resilience-pilot-7d8f9c6b5-x2k4p     1/1     Terminating   0          5m
-resilience-pilot-7d8f9c6b5-m9n2q     1/1     Running       0          5m
-resilience-pilot-7d8f9c6b5-p7j3r     1/1     Running       0          5m
+governor-7d8f9c6b5-x2k4p     1/1     Terminating   0          5m
+governor-7d8f9c6b5-m9n2q     1/1     Running       0          5m
+governor-7d8f9c6b5-p7j3r     1/1     Running       0          5m
 ```
 
 ## Post-Recovery State
 
 ```
 NAME                                  READY   STATUS        RESTARTS   AGE
-resilience-pilot-7d8f9c6b5-a4b1c     1/1     Running       0          8s
-resilience-pilot-7d8f9c6b5-m9n2q     1/1     Running       0          5m
-resilience-pilot-7d8f9c6b5-p7j3r     1/1     Running       0          5m
+governor-7d8f9c6b5-a4b1c     1/1     Running       0          8s
+governor-7d8f9c6b5-m9n2q     1/1     Running       0          5m
+governor-7d8f9c6b5-p7j3r     1/1     Running       0          5m
 ```
 
 ## Remediation Summary

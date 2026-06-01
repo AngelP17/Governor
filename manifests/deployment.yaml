@@ -1,5 +1,5 @@
 ################################################################################
-# The Resilience Pilot - Kubernetes Deployment
+# The Governor - Kubernetes Deployment
 #
 # SRE Concepts Demonstrated:
 # - Self-healing: Liveness/Readiness probes trigger automatic recovery
@@ -11,9 +11,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: resilience-pilot
+  name: governor
   labels:
-    app: resilience-pilot
+    app: governor
     version: v1
 spec:
   # High Availability: 3 replicas ensures service survives pod failures
@@ -28,12 +28,12 @@ spec:
   
   selector:
     matchLabels:
-      app: resilience-pilot
+      app: governor
   
   template:
     metadata:
       labels:
-        app: resilience-pilot
+        app: governor
         version: v1
       annotations:
         # Prometheus scraping annotations
@@ -55,7 +55,7 @@ spec:
                     - key: app
                       operator: In
                       values:
-                        - resilience-pilot
+                        - governor
                 topologyKey: kubernetes.io/hostname
       
       # Security context at pod level
@@ -66,10 +66,10 @@ spec:
         fsGroup: 1000
       
       containers:
-        - name: resilience-pilot
+        - name: governor
           # Image tag is updated by GitOps workflow
-          # FORMAT: your-dockerhub-username/resilience-pilot:TAG
-          image: angellpt/resilience-pilot:6171472d3c6506d0a09023045938ca6d21da2fb3
+          # FORMAT: your-dockerhub-username/governor:TAG
+          image: angellpt/governor:6171472d3c6506d0a09023045938ca6d21da2fb3
           imagePullPolicy: IfNotPresent
           
           ports:

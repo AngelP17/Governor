@@ -2,7 +2,7 @@
 
 ## Project Mission
 
-This repo is a local-first Kubernetes reliability platform for portfolio demos. It shows failure injection, SLO validation, incident context capture, runbook mapping, remediation audit trails, monitoring, policy checks, and GitOps using k3d, FastAPI, React/Vite, Prometheus/Grafana, ArgoCD, Terraform, and shell automation.
+This repo is **Governor**, a local-first Kubernetes reliability platform for portfolio demos. A governor is a control mechanism that keeps a machine within safe operating limits. That is the entire job of this project: detect when Kubernetes services fall outside SLO bounds, drive them back inside, and keep an auditable record of what happened. The system covers failure injection, SLO validation, incident context capture, runbook mapping, remediation audit trails, monitoring, policy checks, and GitOps using k3d, FastAPI, React/Vite, Prometheus/Grafana, ArgoCD, Terraform, and shell automation.
 
 Optimize future changes for reviewer clarity and repeatable local verification. Do not turn this into a production-hosted platform unless the user explicitly asks.
 

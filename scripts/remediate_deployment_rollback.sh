@@ -21,7 +21,7 @@ if [[ ! -d "${INCIDENT_DIR}" ]]; then
 fi
 
 NAMESPACE="${NAMESPACE:-default}"
-DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-resilience-pilot}"
+DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-governor}"
 DRY_RUN="${DRY_RUN:-false}"
 
 LOG_FILE="${INCIDENT_DIR}/remediation.log"

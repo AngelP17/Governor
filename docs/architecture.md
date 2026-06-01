@@ -28,7 +28,7 @@ Three-node k3d cluster with anti-affinity pod scheduling across worker nodes.
 ```mermaid
 graph TB
     subgraph LocalHost["Local Machine (Docker Desktop)"]
-        subgraph k3d["k3d Cluster: resilience-pilot"]
+        subgraph k3d["k3d Cluster: governor"]
             LB["k3d LoadBalancer<br/>host :8080 → cluster :80"]
 
             subgraph CP["Control Plane Node"]
@@ -38,13 +38,13 @@ graph TB
                 CTRL["controller-manager"]
             end
 
-            subgraph WN0["Worker Node 0<br/>k3d-resilience-pilot-agent-0"]
+            subgraph WN0["Worker Node 0<br/>k3d-governor-agent-0"]
                 KUBELET0["kubelet"]
                 PROXY0["kube-proxy"]
                 RUNTIME0["containerd"]
             end
 
-            subgraph WN1["Worker Node 1<br/>k3d-resilience-pilot-agent-1"]
+            subgraph WN1["Worker Node 1<br/>k3d-governor-agent-1"]
                 KUBELET1["kubelet"]
                 PROXY1["kube-proxy"]
                 RUNTIME1["containerd"]
@@ -75,7 +75,7 @@ FastAPI application deployed as 3 replicas with probes, anti-affinity, and Prome
 
 ```mermaid
 flowchart TB
-    subgraph Deploy["Deployment: resilience-pilot"]
+    subgraph Deploy["Deployment: governor"]
         direction TB
         RS["ReplicaSet<br/>replicas: 3"]
 
@@ -88,7 +88,7 @@ flowchart TB
         RS --> Pods
     end
 
-    subgraph Container["Container: resilience-pilot"]
+    subgraph Container["Container: governor"]
         APP["FastAPI<br/>:8080"]
         METRICS["/metrics<br/>prometheus_client"]
         HEALTH["/health<br/>liveness + readiness"]
@@ -179,7 +179,7 @@ flowchart TB
     LINT --> BUILD["Build Docker Image<br/>multi-stage, commit SHA tag"]
     BUILD --> SCAN{"Trivy Vulnerability<br/>Scan"}
     SCAN -->|"CRITICAL found"| BLOCK["Block Release<br/>pipeline fails"]
-    SCAN -->|"Pass"| PUSH_DH["Push to Docker Hub<br/>angellpt/resilience-pilot:SHA"]
+    SCAN -->|"Pass"| PUSH_DH["Push to Docker Hub<br/>angellpt/governor:SHA"]
     PUSH_DH --> UPDATE["Update manifests/<br/>deployment.yaml image tag"]
     UPDATE --> COMMIT["Auto-commit to Git<br/>new image SHA"]
     COMMIT --> ARGO["ArgoCD detects change<br/>polls every 3 min"]
@@ -418,7 +418,7 @@ flowchart LR
 
     subgraph K8S["Kubernetes Networking"]
         INGRESS["Ingress<br/>path: /"]
-        SVC["Service: resilience-pilot<br/>ClusterIP :8000"]
+        SVC["Service: governor<br/>ClusterIP :8000"]
         EP["Endpoints<br/>pod IPs (3)"]
     end
 

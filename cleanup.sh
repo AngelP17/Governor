@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# The Resilience Pilot - Cleanup Script
+# The Governor - Cleanup Script
 #
 # Tears down the entire environment, removing:
 # - k3d cluster (via Terraform)
@@ -30,10 +30,10 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 # ============================================================================
 confirm_cleanup() {
     echo ""
-    echo -e "${YELLOW}⚠️  WARNING: This will destroy the entire Resilience Pilot environment!${NC}"
+    echo -e "${YELLOW}⚠️  WARNING: This will destroy the entire Governor environment!${NC}"
     echo ""
     echo "The following will be deleted:"
-    echo "  - k3d cluster 'resilience-pilot'"
+    echo "  - k3d cluster 'governor'"
     echo "  - All Kubernetes resources"
     echo "  - Terraform state"
     echo ""
@@ -74,8 +74,8 @@ k3d_delete() {
     log_info "Ensuring k3d cluster is deleted..."
     
     if command -v k3d &> /dev/null; then
-        if k3d cluster list 2>/dev/null | grep -q "resilience-pilot"; then
-            k3d cluster delete resilience-pilot || true
+        if k3d cluster list 2>/dev/null | grep -q "governor"; then
+            k3d cluster delete governor || true
         fi
     fi
 }
@@ -86,8 +86,8 @@ k3d_delete() {
 cleanup_docker() {
     log_info "Cleaning up Docker resources..."
     
-    # Remove resilience-pilot images
-    docker images --filter "reference=resilience-pilot*" -q | xargs -r docker rmi -f 2>/dev/null || true
+    # Remove governor images
+    docker images --filter "reference=governor*" -q | xargs -r docker rmi -f 2>/dev/null || true
     
     # Remove dangling images (optional, commented out by default)
     # docker image prune -f 2>/dev/null || true
@@ -138,7 +138,7 @@ main() {
     
     echo ""
     echo "============================================================================"
-    echo "  The Resilience Pilot - Environment Cleanup"
+    echo "  The Governor - Environment Cleanup"
     echo "============================================================================"
     
     confirm_cleanup

@@ -1,5 +1,5 @@
 ################################################################################
-# The Resilience Pilot - DevSecOps CI/CD Pipeline
+# The Governor - DevSecOps CI/CD Pipeline
 #
 # SRE & Security Concepts Demonstrated:
 # - Shift-left security: Scan code and images BEFORE deployment
@@ -80,7 +80,7 @@ jobs:
         with:
           context: ./app
           push: false
-          tags: resilience-pilot:${{ github.sha }}
+          tags: governor:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/image.tar
@@ -97,7 +97,7 @@ jobs:
       - name: Set image tag output
         id: image-info
         run: |
-          IMAGE_TAG="resilience-pilot:${{ github.sha }}"
+          IMAGE_TAG="governor:${{ github.sha }}"
           echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "📦 Built image: ${IMAGE_TAG}"
 
@@ -125,7 +125,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'resilience-pilot:${{ github.sha }}'
+          image-ref: 'governor:${{ github.sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
@@ -137,7 +137,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         if: always()
         with:
-          image-ref: 'resilience-pilot:${{ github.sha }}'
+          image-ref: 'governor:${{ github.sha }}'
           format: 'json'
           output: 'trivy-report.json'
           vuln-type: 'os,library'
@@ -182,8 +182,8 @@ jobs:
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
-          LOCAL_IMAGE="resilience-pilot:${{ github.sha }}"
-          REMOTE_IMAGE="${DOCKERHUB_USERNAME}/resilience-pilot"
+          LOCAL_IMAGE="governor:${{ github.sha }}"
+          REMOTE_IMAGE="${DOCKERHUB_USERNAME}/governor"
 
           docker tag "${LOCAL_IMAGE}" "${REMOTE_IMAGE}:${{ github.sha }}"
           docker tag "${LOCAL_IMAGE}" "${REMOTE_IMAGE}:latest"
@@ -216,11 +216,11 @@ jobs:
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
-          NEW_IMAGE="${DOCKERHUB_USERNAME}/resilience-pilot:${{ github.sha }}"
+          NEW_IMAGE="${DOCKERHUB_USERNAME}/governor:${{ github.sha }}"
           echo "📝 Updating deployment to: ${NEW_IMAGE}"
 
           # Use sed to update the image tag in deployment.yaml
-          sed -i "s|image: .*resilience-pilot:.*|image: ${NEW_IMAGE}|g" manifests/deployment.yaml
+          sed -i "s|image: .*governor:.*|image: ${NEW_IMAGE}|g" manifests/deployment.yaml
 
           # Show the change
           grep "image:" manifests/deployment.yaml

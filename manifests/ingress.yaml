@@ -1,5 +1,5 @@
 ################################################################################
-# The Resilience Pilot - Kubernetes Ingress
+# The Governor - Kubernetes Ingress
 #
 # SRE Concepts Demonstrated:
 # - Path-based routing: Single entry point for multiple services
@@ -10,9 +10,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: resilience-pilot
+  name: governor
   labels:
-    app: resilience-pilot
+    app: governor
   annotations:
     # Ingress class for k3d's built-in traefik (we disabled it, using nginx-style)
     kubernetes.io/ingress.class: "traefik"
@@ -22,12 +22,12 @@ spec:
   rules:
     - http:
         paths:
-          # Route /app/* to the resilience-pilot service
+          # Route /app/* to the governor service
           - path: /app
             pathType: Prefix
             backend:
               service:
-                name: resilience-pilot
+                name: governor
                 port:
                   number: 8080
           
@@ -36,6 +36,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: resilience-pilot
+                name: governor
                 port:
                   number: 8080

@@ -16,19 +16,19 @@ echo ""
 
 # Show current node distribution
 echo "📊 Current pod distribution across nodes:"
-kubectl get pods -l app=resilience-pilot -o wide | awk 'NR==1 || /resilience-pilot/ {print $1 "\t" $7}'
+kubectl get pods -l app=governor -o wide | awk 'NR==1 || /governor/ {print $1 "\t" $7}'
 
 # Select a node with pods
 echo ""
 echo "🎯 Selecting a node to drain..."
-NODE=$(kubectl get pods -l app=resilience-pilot -o jsonpath='{.items[0].spec.nodeName}')
+NODE=$(kubectl get pods -l app=governor -o jsonpath='{.items[0].spec.nodeName}')
 
 if [ -z "$NODE" ]; then
-  echo "❌ No node found with resilience-pilot pods"
+  echo "❌ No node found with governor pods"
   exit 1
 fi
 
-PODS_ON_NODE=$(kubectl get pods -l app=resilience-pilot -o wide | grep "$NODE" | wc -l | tr -d ' ')
+PODS_ON_NODE=$(kubectl get pods -l app=governor -o wide | grep "$NODE" | wc -l | tr -d ' ')
 
 echo "Target node: $NODE"
 echo "Pods on this node: $PODS_ON_NODE"
@@ -53,8 +53,8 @@ echo ""
 echo "⏱️  Monitoring pod migration (30 seconds)..."
 
 for i in {30..1}; do
-  READY=$(kubectl get pods -l app=resilience-pilot --no-headers | grep "1/1" | wc -l | tr -d ' ')
-  TOTAL=$(kubectl get pods -l app=resilience-pilot --no-headers | wc -l | tr -d ' ')
+  READY=$(kubectl get pods -l app=governor --no-headers | grep "1/1" | wc -l | tr -d ' ')
+  TOTAL=$(kubectl get pods -l app=governor --no-headers | wc -l | tr -d ' ')
   printf "\r  Pods ready: ${READY}/${TOTAL} | Time: ${i}s  "
   sleep 1
 done
@@ -62,11 +62,11 @@ echo ""
 
 echo ""
 echo "📊 New pod distribution:"
-kubectl get pods -l app=resilience-pilot -o wide | awk 'NR==1 || /resilience-pilot/ {print $1 "\t" $7}'
+kubectl get pods -l app=governor -o wide | awk 'NR==1 || /governor/ {print $1 "\t" $7}'
 
 echo ""
 echo "🔍 Verify no pods on drained node:"
-if kubectl get pods -l app=resilience-pilot -o wide | grep -q "$NODE"; then
+if kubectl get pods -l app=governor -o wide | grep -q "$NODE"; then
   echo "⚠️  Warning: Some pods still on drained node"
 else
   echo "✅ All pods successfully migrated!"
@@ -95,4 +95,4 @@ echo "  - Anti-affinity rules spread pods across remaining nodes"
 echo "  - Service continued without downtime"
 echo ""
 echo "📊 Final status:"
-kubectl get pods -l app=resilience-pilot -o wide
+kubectl get pods -l app=governor -o wide

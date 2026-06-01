@@ -50,7 +50,7 @@ sequenceDiagram
 kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80
 
 # Application
-kubectl port-forward -n default svc/resilience-pilot 8080:8000
+kubectl port-forward -n default svc/governor 8080:8000
 
 # ArgoCD (Optional)
 kubectl port-forward -n argocd svc/argocd-server 8443:443
@@ -100,7 +100,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 ### 2. Find Your Dashboard
 1. Click the hamburger menu (☰) on the left
 2. Navigate to **Dashboards**
-3. Click on **Resilience Pilot Dashboard**
+3. Click on **Governor Dashboard**
 
 ### 3. Understanding the Panels
 
@@ -148,10 +148,10 @@ The app has 3 replicas with:
 ### Experiment 1: Manual Pod Deletion
 ```bash
 # Kill a random pod
-kubectl delete pod -l app=resilience-pilot --grace-period=0 --force
+kubectl delete pod -l app=governor --grace-period=0 --force
 
 # Watch recovery
-watch kubectl get pods -l app=resilience-pilot
+watch kubectl get pods -l app=governor
 ```
 
 **Expected Result**:
@@ -197,7 +197,7 @@ After running, an `incidents/INC-*` directory is created containing:
 # Terminal 2: Delete pods repeatedly
 for i in {1..5}; do
   echo "Chaos round $i"
-  kubectl delete pod -l app=resilience-pilot --grace-period=0 --force
+  kubectl delete pod -l app=governor --grace-period=0 --force
   sleep 15
 done
 ```
@@ -261,8 +261,8 @@ These snapshots enable before/after comparison and post-incident review.
 ### Measuring MTTR (Mean Time To Recovery)
 ```bash
 # Time how long until pod is ready
-time (kubectl delete pod -l app=resilience-pilot --grace-period=0 --force && \
-      kubectl wait --for=condition=ready pod -l app=resilience-pilot --timeout=60s)
+time (kubectl delete pod -l app=governor --grace-period=0 --force && \
+      kubectl wait --for=condition=ready pod -l app=governor --timeout=60s)
 ```
 
 **Target**: Recovery in < 10 seconds
@@ -285,7 +285,7 @@ open https://localhost:8443
 ```
 
 ### What You'll See
-- **Application**: resilience-pilot
+- **Application**: governor
 - **Status**: Healthy and Synced
 - **Auto-Sync**: Enabled (watches Git repo)
 - **Self-Heal**: Enabled (auto-corrects drift)
@@ -302,7 +302,7 @@ When CI/CD pushes a new image:
 If you make manual changes to manifests:
 ```bash
 # Trigger sync immediately
-kubectl -n argocd patch app resilience-pilot \
+kubectl -n argocd patch app governor \
   --type merge -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"true"}}}'
 ```
 
@@ -325,12 +325,12 @@ kubectl -n argocd patch app resilience-pilot \
    kubectl port-forward -n monitoring svc/prometheus-kube-prometheus-prometheus 9090:9090
    # Open http://localhost:9090
    # Go to Status → Targets
-   # Find "resilience-pilot" - should be UP
+   # Find "governor" - should be UP
    ```
 
 3. Verify ServiceMonitor:
    ```bash
-   kubectl get servicemonitor resilience-pilot -o yaml
+   kubectl get servicemonitor governor -o yaml
    ```
 
 ### Port Forward Keeps Dying
@@ -363,19 +363,19 @@ kubectl -n argocd patch app resilience-pilot \
 
 **Check pods**:
 ```bash
-kubectl get pods -l app=resilience-pilot
-kubectl logs -l app=resilience-pilot --tail=50
+kubectl get pods -l app=governor
+kubectl logs -l app=governor --tail=50
 ```
 
 **Check service**:
 ```bash
-kubectl get svc resilience-pilot
-kubectl describe svc resilience-pilot
+kubectl get svc governor
+kubectl describe svc governor
 ```
 
 **Restart port-forward**:
 ```bash
-kubectl port-forward svc/resilience-pilot 8080:8000
+kubectl port-forward svc/governor 8080:8000
 ```
 
 ### Chaos Experiments Show No Impact
@@ -416,11 +416,11 @@ gh run view <run-id>
 **Fix**:
 ```bash
 # Manual sync
-kubectl -n argocd patch app resilience-pilot \
+kubectl -n argocd patch app governor \
   --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'
 
 # Or use ArgoCD CLI
-argocd app sync resilience-pilot
+argocd app sync governor
 ```
 
 ---
@@ -435,7 +435,7 @@ argocd app sync resilience-pilot
    kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80
 
    # Terminal 2: Application
-   kubectl port-forward svc/resilience-pilot 8080:8000
+   kubectl port-forward svc/governor 8080:8000
 
    # Terminal 3: Load generator
    ./generate-load.sh
@@ -444,7 +444,7 @@ argocd app sync resilience-pilot
 2. **Open Browser Tabs**:
    - Grafana: http://localhost:3000
    - Application: http://localhost:8080/health
-   - GitHub Actions: https://github.com/YourUsername/k8s-resilience-pilot/actions
+   - GitHub Actions: https://github.com/YourUsername/governor/actions
 
 3. **Set Grafana Time Range**:
    - Last 5 minutes
@@ -517,27 +517,27 @@ kubectl get all -n monitoring
 kubectl get all -n argocd
 
 # Check logs
-kubectl logs -l app=resilience-pilot -f --tail=100
+kubectl logs -l app=governor -f --tail=100
 
 # Describe resources
-kubectl describe deployment resilience-pilot
-kubectl describe svc resilience-pilot
+kubectl describe deployment governor
+kubectl describe svc governor
 
 # Port forwards (all in one)
 kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80 &
-kubectl port-forward svc/resilience-pilot 8080:8000 &
+kubectl port-forward svc/governor 8080:8000 &
 
 # Clean up port forwards
 pkill -f port-forward
 
 # Force pod restart (chaos)
-kubectl rollout restart deployment resilience-pilot
+kubectl rollout restart deployment governor
 
 # Scale replicas
-kubectl scale deployment resilience-pilot --replicas=5
+kubectl scale deployment governor --replicas=5
 
 # Watch pod status (live updates)
-watch -n 1 kubectl get pods -l app=resilience-pilot
+watch -n 1 kubectl get pods -l app=governor
 ```
 
 ---

@@ -41,11 +41,11 @@ curl -X POST http://localhost:9095/alert \
           "alertname": "PodCrashLoopBackOff",
           "namespace": "default",
           "severity": "critical",
-          "pod": "resilience-pilot-7d9f8b6c4-x2kjl"
+          "pod": "governor-7d9f8b6c4-x2kjl"
         },
         "annotations": {
           "summary": "Pod is in CrashLoopBackOff state",
-          "description": "Pod resilience-pilot-7d9f8b6c4-x2kjl in namespace default has restarted 5 times in the last 10 minutes."
+          "description": "Pod governor-7d9f8b6c4-x2kjl in namespace default has restarted 5 times in the last 10 minutes."
         },
         "startsAt": "2026-04-22T10:00:00Z",
         "endsAt": "0001-01-01T00:00:00Z",
@@ -105,7 +105,7 @@ A minimal Alertmanager webhook payload for testing:
         "alertname": "PodCrashLoopBackOff",
         "namespace": "default",
         "severity": "critical",
-        "pod": "resilience-pilot-7d9f8b6c4-x2kjl"
+        "pod": "governor-7d9f8b6c4-x2kjl"
       },
       "annotations": {
         "summary": "Pod is in CrashLoopBackOff state",

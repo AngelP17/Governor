@@ -11,7 +11,7 @@
 
 ```bash
 # List pods and check status
-kubectl get pods -l app=resilience-pilot -n default
+kubectl get pods -l app=governor -n default
 
 # Get detailed pod events and state
 kubectl describe pod <pod-name> -n default
@@ -32,8 +32,8 @@ kubectl get events -n default --sort-by='.lastTimestamp'
 Check in Prometheus:
 
 ```promql
-kube_pod_container_status_last_terminated_reason{namespace="default", pod=~"resilience-pilot.*"}
-kube_pod_container_status_restarts_total{namespace="default", pod=~"resilience-pilot.*"}
+kube_pod_container_status_last_terminated_reason{namespace="default", pod=~"governor.*"}
+kube_pod_container_status_restarts_total{namespace="default", pod=~"governor.*"}
 ```
 
 ## Likely Causes
@@ -98,8 +98,8 @@ Verify image tag exists and image pull secrets are configured.
 
 ```bash
 # Verify recovery
-kubectl get pods -l app=resilience-pilot -n default
-kubectl get pods -l app=resilience-pilot -n default -o jsonpath='{.items[*].status.containerStatuses[0].ready}'
+kubectl get pods -l app=governor -n default
+kubectl get pods -l app=governor -n default -o jsonpath='{.items[*].status.containerStatuses[0].ready}'
 curl -s -o /dev/null -w "%{http_code}" http://<service-endpoint>/health
 ```
 

@@ -1,4 +1,4 @@
-# The Resilience Pilot - Python Dependencies
+# The Governor - Python Dependencies
 # 
 # Core requirements for the FastAPI application with Prometheus metrics.
 # Versions pinned for reproducible builds.

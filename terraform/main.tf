@@ -1,5 +1,5 @@
 ################################################################################
-# The Resilience Pilot - Terraform Configuration
+# The Governor - Terraform Configuration
 # 
 # This configuration creates a local k3d Kubernetes cluster optimized for
 # SRE demonstrations: self-healing, observability, and GitOps workflows.
@@ -33,7 +33,7 @@ provider "k3d" {}
 # - Configurable through variables for different environments
 ################################################################################
 
-resource "k3d_cluster" "resilience_pilot" {
+resource "k3d_cluster" "governor" {
   name    = var.cluster_name
   servers = var.server_count
   agents  = var.agent_count

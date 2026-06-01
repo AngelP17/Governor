@@ -1,6 +1,6 @@
 # Governor: Kubernetes Reliability Platform
 
-[![DevSecOps Pipeline](https://github.com/AngelP17/k8s-resilience-pilot/actions/workflows/devsecops.yml/badge.svg)](https://github.com/AngelP17/k8s-resilience-pilot/actions/workflows/devsecops.yml)
+[![DevSecOps Pipeline](https://github.com/AngelP17/governor/actions/workflows/devsecops.yml/badge.svg)](https://github.com/AngelP17/governor/actions/workflows/devsecops.yml)
 
 **Production-style Kubernetes reliability platform for failure injection, observability, incident context capture, and runbook-driven recovery.**
 
@@ -18,7 +18,7 @@ See [docs/architecture.md](docs/architecture.md) for the full system architectur
 graph TB
     subgraph LocalHost["Local Machine"]
         User["User / CI"]
-        subgraph k3d["k3d Cluster: resilience-pilot"]
+        subgraph k3d["k3d Cluster: governor"]
             LB["LoadBalancer<br/>:8080 → :80"]
             subgraph CP["Control Plane"]
                 S1["Server Node"]
@@ -248,8 +248,8 @@ brew install docker terraform kubectl helm k3d
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/AngelP17/k8s-resilience-pilot.git
-cd k8s-resilience-pilot
+git clone https://github.com/AngelP17/governor.git
+cd governor
 
 # 2. Make scripts executable
 chmod +x *.sh
@@ -270,7 +270,7 @@ That's it! The setup script will:
 
 ### Resilience Control Plane UI
 
-Resilience Pilot UI is a local-first reliability control plane for demonstrating Kubernetes failure recovery, SLO validation, incident context capture, runbook mapping, and auditability. It converts the repo's scripts, manifests, metrics, and incident artifacts into a guided operational surface for Platform/SRE portfolio review.
+Governor UI is a local-first reliability control plane for demonstrating Kubernetes failure recovery, SLO validation, incident context capture, runbook mapping, and auditability. It converts the repo's scripts, manifests, metrics, and incident artifacts into a guided operational surface for Platform/SRE portfolio review.
 
 ```bash
 # Terminal 1: API
@@ -372,14 +372,14 @@ Expected output:
 ```
 🐒 CHAOS MONKEY - Kubernetes Self-Healing Demo
 ═══════════════════════════════════════════════
-🎯 Selected victim: resilience-pilot-abc123
+🎯 Selected victim: governor-abc123
 💥 Terminating pod...
 ⏳ Running pods: 2/3 | Elapsed: 5s
 ⏳ Running pods: 3/3 | Elapsed: 12s
 
 📊 CHAOS EXPERIMENT RESULTS
 ═══════════════════════════════════════════════
-  Victim Pod:        resilience-pilot-abc123
+  Victim Pod:        governor-abc123
   Recovery Time:     12 seconds
   SLO Target:        < 30 seconds
   
@@ -427,7 +427,7 @@ flowchart LR
 ## Project Structure
 
 ```
-k8s-resilience-pilot/
+governor/
 ├── terraform/                  # Infrastructure as Code
 │   ├── main.tf                 # k3d cluster definition
 │   ├── variables.tf            # Configurable parameters
@@ -521,14 +521,14 @@ k8s-resilience-pilot/
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DEPLOYMENT_NAME` | resilience-pilot | Target deployment for chaos |
+| `DEPLOYMENT_NAME` | governor | Target deployment for chaos |
 | `NAMESPACE` | default | Kubernetes namespace |
 
 ### Terraform Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `cluster_name` | resilience-pilot | k3d cluster name |
+| `cluster_name` | governor | k3d cluster name |
 | `server_count` | 1 | Control plane nodes |
 | `agent_count` | 2 | Worker nodes |
 | `lb_host_port` | 8080 | LoadBalancer host port |

@@ -1,7 +1,7 @@
 {
   "incident_id": "INC-20260422153045",
   "failure_type": "pod-termination",
-  "victim_pod": "resilience-pilot-7d8f9c6b5-x2k4p",
+  "victim_pod": "governor-7d8f9c6b5-x2k4p",
   "recovery_time_seconds": 11,
   "slo_target_seconds": 30,
   "slo_met": true,

@@ -5,9 +5,9 @@
 Run these commands before the interview starts:
 
 ```bash
-k3d cluster create resilience-pilot || true
+k3d cluster create governor || true
 kubectl apply -k k8s/
-argocd app sync resilience-pilot
+argocd app sync governor
 # Port-forwards
 kubectl port-forward svc/prometheus-operated 9090:9090 &
 kubectl port-forward svc/grafana 3000:3000 &
@@ -18,7 +18,7 @@ kubectl apply -f k8s/load-generator.yaml
 Verify:
 
 ```bash
-kubectl get pods -l app=resilience-pilot
+kubectl get pods -l app=governor
 ```
 
 All 3 pods should show `Running` with `1/1 Ready`.
@@ -34,7 +34,7 @@ All 3 pods should show `Running` with `1/1 Ready`.
 ```bash
 kubectl get pods -o wide
 kubectl top pods
-argocd app get resilience-pilot
+argocd app get governor
 ```
 
 **Key talking point:** Demonstrates infrastructure-as-code mindset and production-grade Kubernetes configuration.

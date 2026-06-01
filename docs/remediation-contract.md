@@ -24,7 +24,7 @@ Each script is self-contained, receives an incident directory as its sole positi
 | Variable | Default | Description |
 |---|---|---|
 | `NAMESPACE` | `default` | Kubernetes namespace containing the target deployment |
-| `DEPLOYMENT_NAME` | `resilience-pilot` | Name of the deployment to remediate |
+| `DEPLOYMENT_NAME` | `governor` | Name of the deployment to remediate |
 | `DRY_RUN` | `false` | When `true`, logs intended actions without executing mutating commands |
 
 ## Outputs

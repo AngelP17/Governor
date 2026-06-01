@@ -1,16 +1,16 @@
-# This PodDisruptionBudget ensures that at least 2 of the 3 resilience-pilot
+# This PodDisruptionBudget ensures that at least 2 of the 3 governor
 # replicas remain available during voluntary disruptions such as node drains,
 # cluster upgrades, or rolling deployments. This prevents a quorum loss scenario
 # where too many pods are simultaneously evicted.
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: resilience-pilot-pdb
+  name: governor-pdb
   namespace: default
   labels:
-    app: resilience-pilot
+    app: governor
 spec:
   minAvailable: 2
   selector:
     matchLabels:
-      app: resilience-pilot
+      app: governor

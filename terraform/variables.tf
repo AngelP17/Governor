@@ -1,5 +1,5 @@
 ################################################################################
-# Variables for The Resilience Pilot Cluster
+# Variables for The Governor Cluster
 #
 # These variables allow customization of the k3d cluster for different
 # environments and resource constraints.
@@ -8,7 +8,7 @@
 variable "cluster_name" {
   description = "Name of the k3d cluster"
   type        = string
-  default     = "resilience-pilot"
+  default     = "governor"
 }
 
 variable "server_count" {

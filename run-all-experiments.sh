@@ -10,7 +10,7 @@ set -e
 cat << "EOF"
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║                    🔥 RESILIENCE PILOT - CHAOS SUITE 🔥                     ║
+║                    🔥 GOVERNOR - CHAOS SUITE 🔥                     ║
 ║                                                                              ║
 ║                  Complete Chaos Engineering Experiment Suite                ║
 ║                                                                              ║

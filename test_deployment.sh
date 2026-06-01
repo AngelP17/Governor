@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# The Resilience Pilot - Deployment Smoke Tests
+# The Governor - Deployment Smoke Tests
 #
 # Validates the deployment by checking:
 # - Pod health status
@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 NAMESPACE="${NAMESPACE:-default}"
-DEPLOYMENT="resilience-pilot"
+DEPLOYMENT="governor"
 ENDPOINT_URL="http://localhost:8080"
 MAX_RETRIES=30
 RETRY_INTERVAL=2
@@ -178,7 +178,7 @@ wait_for_deployment() {
 main() {
     echo ""
     echo "============================================================================"
-    echo "  The Resilience Pilot - Smoke Tests"
+    echo "  The Governor - Smoke Tests"
     echo "============================================================================"
     echo ""
     

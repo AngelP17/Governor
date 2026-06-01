@@ -2,7 +2,7 @@
 set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-default}"
-DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-resilience-pilot}"
+DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-governor}"
 APP_LABEL="${APP_LABEL:-app=${DEPLOYMENT_NAME}}"
 
 if [ $# -lt 1 ]; then
@@ -10,7 +10,7 @@ if [ $# -lt 1 ]; then
     echo "  Captures Kubernetes incident context into the specified directory." >&2
     echo "  Environment variables:" >&2
     echo "    NAMESPACE        - Kubernetes namespace (default: default)" >&2
-    echo "    DEPLOYMENT_NAME  - Deployment name (default: resilience-pilot)" >&2
+    echo "    DEPLOYMENT_NAME  - Deployment name (default: governor)" >&2
     echo "    APP_LABEL        - Label selector (default: app=\${DEPLOYMENT_NAME})" >&2
     exit 1
 fi

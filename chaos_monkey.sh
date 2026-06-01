@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# The Resilience Pilot - Chaos Monkey Script
+# The Governor - Chaos Monkey Script
 #
 # Demonstrates Kubernetes self-healing by randomly killing pods and measuring
 # Mean Time To Recovery (MTTR).
@@ -22,7 +22,7 @@ MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Configuration
-DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-resilience-pilot}"
+DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-governor}"
 NAMESPACE="${NAMESPACE:-default}"
 SLO_RECOVERY_SECONDS=30
 
@@ -258,7 +258,7 @@ show_help() {
     echo "Options:"
     echo "  -h, --help              Show this help message"
     echo "  -c, --continuous [SEC]  Run continuously with interval (default: 60s)"
-    echo "  -d, --deployment NAME   Target deployment (default: resilience-pilot)"
+    echo "  -d, --deployment NAME   Target deployment (default: governor)"
     echo "  -n, --namespace NS      Target namespace (default: default)"
     echo ""
     echo "Examples:"

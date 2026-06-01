@@ -7,7 +7,7 @@
 
 output "cluster_name" {
   description = "Name of the created k3d cluster"
-  value       = k3d_cluster.resilience_pilot.name
+  value       = k3d_cluster.governor.name
 }
 
 output "api_endpoint" {

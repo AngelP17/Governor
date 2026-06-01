@@ -1,6 +1,6 @@
 # Final Validation Report
 
-Repository: [k8s-resilience-pilot](https://github.com/AngelP17/k8s-resilience-pilot)
+Repository: [governor](https://github.com/AngelP17/governor)
 Date: 2026-04-22
 
 ## Validation Matrix

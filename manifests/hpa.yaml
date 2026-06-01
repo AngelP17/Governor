@@ -1,4 +1,4 @@
-# This HorizontalPodAutoscaler scales the resilience-pilot deployment based on
+# This HorizontalPodAutoscaler scales the governor deployment based on
 # CPU utilization with a 70% threshold. It maintains between 3 and 6 replicas.
 #
 # Requirements:
@@ -13,15 +13,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: resilience-pilot-hpa
+  name: governor-hpa
   namespace: default
   labels:
-    app: resilience-pilot
+    app: governor
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: resilience-pilot
+    name: governor
   minReplicas: 3
   maxReplicas: 6
   metrics:

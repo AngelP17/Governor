@@ -2,7 +2,7 @@
 
 ## Architecture Summary
 
-This project implements a self-healing Kubernetes resilience pilot on a local k3d cluster. The architecture comprises:
+This project implements a self-healing Kubernetes governor on a local k3d cluster. The architecture comprises:
 
 - **k3d cluster** running a stateless demo application deployed as a 3-replica Deployment
 - **Prometheus + Grafana** for metrics collection, dashboards, and SLO-based alerting

@@ -23,10 +23,10 @@ for i in {1..10}; do
 
   # Show current pods
   echo "📊 Current pods:"
-  kubectl get pods -l app=resilience-pilot --no-headers | awk '{print "  - " $1 " [" $3 "]"}'
+  kubectl get pods -l app=governor --no-headers | awk '{print "  - " $1 " [" $3 "]"}'
 
   # Kill a random pod
-  POD_NAME=$(kubectl get pods -l app=resilience-pilot -o jsonpath='{.items[0].metadata.name}')
+  POD_NAME=$(kubectl get pods -l app=governor -o jsonpath='{.items[0].metadata.name}')
   echo ""
   echo "💥 Killing pod: $POD_NAME"
   kubectl delete pod $POD_NAME --grace-period=0 --force 2>/dev/null || true
@@ -35,8 +35,8 @@ for i in {1..10}; do
   echo ""
   echo "⏱️  Waiting 15 seconds before next round..."
   for j in {15..1}; do
-    READY=$(kubectl get pods -l app=resilience-pilot --no-headers | grep "1/1" | wc -l | tr -d ' ')
-    TOTAL=$(kubectl get pods -l app=resilience-pilot --no-headers | wc -l | tr -d ' ')
+    READY=$(kubectl get pods -l app=governor --no-headers | grep "1/1" | wc -l | tr -d ' ')
+    TOTAL=$(kubectl get pods -l app=governor --no-headers | wc -l | tr -d ' ')
     printf "\r  Pods ready: ${READY}/${TOTAL} | Next chaos in: ${j}s  "
     sleep 1
   done
@@ -49,7 +49,7 @@ echo "✅ Experiment 1 Complete!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📊 Final pod status:"
-kubectl get pods -l app=resilience-pilot
+kubectl get pods -l app=governor
 echo ""
 echo "📈 Check Grafana for:"
 echo "  - Multiple pod restarts in 'Pod Restarts Over Time'"

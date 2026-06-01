@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# The Resilience Pilot - Master Setup Script
+# The Governor - Master Setup Script
 #
 # Orchestrates the complete environment setup:
 # 1. Prerequisites check
@@ -145,11 +145,11 @@ build_and_import_image() {
     
     # Build the Docker image
     log_info "Building Docker image..."
-    docker build -t resilience-pilot:latest .
+    docker build -t governor:latest .
     
     # Import into k3d cluster
     log_info "Importing image into k3d cluster..."
-    k3d image import resilience-pilot:latest -c resilience-pilot
+    k3d image import governor:latest -c governor
     
     cd "${SCRIPT_DIR}"
     log_success "Docker image built and imported"
@@ -166,7 +166,7 @@ deploy_application() {
     
     # Wait for deployment to be ready
     log_info "Waiting for pods to be ready..."
-    kubectl wait --for=condition=available deployment/resilience-pilot --timeout=120s
+    kubectl wait --for=condition=available deployment/governor --timeout=120s
     
     log_success "Application deployed"
 }
@@ -213,7 +213,7 @@ run_smoke_tests() {
 print_summary() {
     echo ""
     echo "============================================================================"
-    echo -e "${GREEN}🎉 THE RESILIENCE PILOT IS READY!${NC}"
+    echo -e "${GREEN}🎉 THE GOVERNOR IS READY!${NC}"
     echo "============================================================================"
     echo ""
     echo -e "${BLUE}Application Access:${NC}"
@@ -237,7 +237,7 @@ print_summary() {
     echo ""
     echo "============================================================================"
     echo -e "${CYAN}Next Steps:${NC}"
-    echo "  1. Open Grafana and view the 'Resilience Pilot' dashboard"
+    echo "  1. Open Grafana and view the 'Governor' dashboard"
     echo "  2. Run ./chaos_monkey.sh to see self-healing in action"
     echo "  3. Watch the Grafana dashboard update in real-time"
     echo "============================================================================"
